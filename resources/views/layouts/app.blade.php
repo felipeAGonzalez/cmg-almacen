@@ -45,6 +45,10 @@
                         <i class="bi bi-people" aria-hidden="true"></i>
                         <span>Usuarios</span>
                     </a>
+                    <a href="{{ route('warehouses.index') }}" class="admin-nav-link {{ request()->routeIs('warehouses.*') ? 'active' : '' }}">
+                        <i class="bi bi-building" aria-hidden="true"></i>
+                        <span>Almacenes</span>
+                    </a>
                 @endif
             </nav>
 
