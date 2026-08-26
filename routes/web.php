@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\UserController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -14,10 +15,10 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         return view('home');
     })->name('home');
 
-    // Ejemplo de ruta restringida por rol:
-    // Route::middleware('role:admin')->group(function () {
-    //     Route::get('/admin', fn () => view('admin.index'))->name('admin.index');
-    // });
+    Route::resource('users', UserController::class)
+        ->except('show')
+        ->middleware('role:administrator');
+
 });
 
 require __DIR__.'/auth.php';
