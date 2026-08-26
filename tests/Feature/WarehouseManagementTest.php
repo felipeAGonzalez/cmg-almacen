@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -153,6 +154,24 @@ class WarehouseManagementTest extends TestCase
         $this->assertModelExists($warehouse);
     }
 
+    public function test_a_warehouse_with_suppliers_cannot_be_deleted(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create();
+        $supplier = Supplier::factory()->for($warehouse)->create();
+
+        $response = $this->actingAs($administrator)
+            ->delete(route('warehouses.destroy', $warehouse));
+
+        $response
+            ->assertRedirect(route('warehouses.index'))
+            ->assertSessionHas(
+                'error',
+                'No se puede eliminar el almacén porque tiene proveedores registrados.',
+            );
+        $this->assertModelExists($warehouse);
+        $this->assertModelExists($supplier);
+    }
 
     public function test_the_index_is_alphabetical_and_includes_the_user_count(): void
     {

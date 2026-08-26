@@ -56,6 +56,11 @@ class WarehouseController extends Controller
                 ->with('error', 'No se puede eliminar el almacén porque tiene usuarios asignados.');
         }
 
+        if ($warehouse->suppliers()->exists()) {
+            return redirect()
+                ->route('warehouses.index')
+                ->with('error', 'No se puede eliminar el almacén porque tiene proveedores registrados.');
+        }
 
         $warehouse->delete();
 
