@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Auth;
@@ -24,6 +25,10 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         ->except('show')
         ->middleware('role:administrator');
 
+    Route::resource('warehouses.suppliers', SupplierController::class)
+        ->except('show')
+        ->middleware('supplier.access')
+        ->scoped();
 });
 
 require __DIR__.'/auth.php';

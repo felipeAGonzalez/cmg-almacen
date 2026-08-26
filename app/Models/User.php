@@ -42,6 +42,15 @@ class User extends Authenticatable
         return in_array($this->role, [UserRole::ADMINISTRATOR, UserRole::ROOT], true);
     }
 
+    public function canManageSuppliersIn(Warehouse $warehouse): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        return $this->role === UserRole::WAREHOUSE_MANAGER
+            && $this->warehouses()->whereKey($warehouse->getKey())->exists();
+    }
 
     /**
      * @return BelongsToMany<Warehouse, $this>

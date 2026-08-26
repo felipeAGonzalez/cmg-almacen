@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureUserCanManageSuppliers;
+use App\Http\Middleware\EnsureUserHasRole;
+use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Foundation\Application;
 use Illuminate\Foundation\Configuration\Exceptions;
 use Illuminate\Foundation\Configuration\Middleware;
@@ -13,14 +16,15 @@ return Application::configure(basePath: dirname(__DIR__))
     )
     ->withMiddleware(function (Middleware $middleware): void {
         $middleware->alias([
-            'prevent.back' => \App\Http\Middleware\PreventBackHistory::class,
-            'role'         => \App\Http\Middleware\EnsureUserHasRole::class,
+            'prevent.back' => PreventBackHistory::class,
+            'role' => EnsureUserHasRole::class,
+            'supplier.access' => EnsureUserCanManageSuppliers::class,
         ]);
 
         // Aplica no-cache a TODAS las rutas web: evita que el browser cachee
         // tanto las páginas privadas (tras logout) como el login (tras iniciar sesión).
         $middleware->appendToGroup('web', [
-            \App\Http\Middleware\PreventBackHistory::class,
+            PreventBackHistory::class,
         ]);
     })
     ->withExceptions(function (Exceptions $exceptions): void {
