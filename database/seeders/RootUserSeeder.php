@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -13,11 +14,11 @@ class RootUserSeeder extends Seeder
         User::updateOrCreate(
             ['email' => 'soporte@cmg.com'],
             [
-                'name'          => 'Soporte',
+                'name' => 'Soporte',
                 'last_name_one' => 'CMG',
                 'last_name_two' => null,
-                'password'      => Hash::make('apocalipsis'),
-                'role'          => 'root',
+                'password' => Hash::make('apocalipsis'),
+                'role' => UserRole::ROOT,
             ]
         );
     }

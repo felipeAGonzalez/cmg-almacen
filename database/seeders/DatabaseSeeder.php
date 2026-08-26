@@ -2,6 +2,7 @@
 
 namespace Database\Seeders;
 
+use App\Enums\UserRole;
 use App\Models\User;
 use Illuminate\Database\Seeder;
 use Illuminate\Support\Facades\Hash;
@@ -13,21 +14,21 @@ class DatabaseSeeder extends Seeder
         $this->call(RootUserSeeder::class);
 
         User::create([
-            'name'          => 'Admin',
+            'name' => 'Admin',
             'last_name_one' => 'Sistema',
             'last_name_two' => null,
-            'email'         => 'admin@example.com',
-            'password'      => Hash::make('Admin1234'),
-            'role'          => 'admin',
+            'email' => 'admin@example.com',
+            'password' => Hash::make('Admin1234'),
+            'role' => UserRole::ADMINISTRATOR,
         ]);
 
         User::create([
-            'name'          => 'Usuario',
+            'name' => 'Usuario',
             'last_name_one' => 'Ejemplo',
             'last_name_two' => null,
-            'email'         => 'user@example.com',
-            'password'      => Hash::make('User1234'),
-            'role'          => 'user',
+            'email' => 'user@example.com',
+            'password' => Hash::make('User1234'),
+            'role' => UserRole::LEGACY_USER,
         ]);
     }
 }
