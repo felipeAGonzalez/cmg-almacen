@@ -49,6 +49,11 @@
                         <i class="bi bi-building" aria-hidden="true"></i>
                         <span>Almacenes</span>
                     </a>
+                    <span class="admin-nav-label mt-4">CATÁLOGOS</span>
+                    <a href="{{ route('units.index') }}" class="admin-nav-link {{ request()->routeIs('units.*') ? 'active' : '' }}">
+                        <i class="bi bi-rulers" aria-hidden="true"></i>
+                        <span>Unidades</span>
+                    </a>
                 @elseif (Auth::user()->role === \App\Enums\UserRole::WAREHOUSE_MANAGER)
                     @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
                     @if ($assignedWarehouses->isNotEmpty())

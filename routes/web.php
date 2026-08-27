@@ -1,6 +1,7 @@
 <?php
 
 use App\Http\Controllers\SupplierController;
+use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
 use Illuminate\Support\Facades\Auth;
@@ -18,6 +19,11 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     })->name('home');
 
     Route::resource('users', UserController::class)
+        ->except('show')
+        ->middleware('role:administrator');
+
+
+    Route::resource('units', UnitController::class)
         ->except('show')
         ->middleware('role:administrator');
 
