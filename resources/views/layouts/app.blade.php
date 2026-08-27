@@ -49,6 +49,20 @@
                         <i class="bi bi-building" aria-hidden="true"></i>
                         <span>Almacenes</span>
                     </a>
+                @elseif (Auth::user()->role === \App\Enums\UserRole::WAREHOUSE_MANAGER)
+                    @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
+                    @if ($assignedWarehouses->isNotEmpty())
+                        <span class="admin-nav-label mt-4">MIS ALMACENES</span>
+                        @foreach ($assignedWarehouses as $assignedWarehouse)
+                            <a
+                                href="{{ route('warehouses.suppliers.index', $assignedWarehouse) }}"
+                                class="admin-nav-link {{ request()->routeIs('warehouses.suppliers.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}"
+                            >
+                                <i class="bi bi-building" aria-hidden="true"></i>
+                                <span>{{ $assignedWarehouse->name }}</span>
+                            </a>
+                        @endforeach
+                    @endif
                 @endif
             </nav>
 

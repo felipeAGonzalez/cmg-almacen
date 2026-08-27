@@ -53,6 +53,11 @@
                                     </span>
                                 </td>
                                 <td class="text-end text-nowrap">
+                                    @if (Auth::user()->canManageSuppliersIn($warehouse))
+                                        <a href="{{ route('warehouses.suppliers.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver proveedores de {{ $warehouse->name }}">
+                                            <i class="bi bi-truck me-1" aria-hidden="true"></i>Proveedores
+                                        </a>
+                                    @endif
                                     <a href="{{ route('warehouses.edit', $warehouse) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $warehouse->name }}">
                                         <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar
                                     </a>

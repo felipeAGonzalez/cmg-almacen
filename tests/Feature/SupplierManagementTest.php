@@ -232,6 +232,78 @@ class SupplierManagementTest extends TestCase
         $this->delete(route('warehouses.suppliers.destroy', [$routeWarehouse, $supplier]))->assertNotFound();
     }
 
+    public function test_administrator_sees_supplier_navigation_from_warehouse_index(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create(['name' => 'Clínica Centro']);
+
+        $this->actingAs($administrator)
+            ->get(route('warehouses.index'))
+            ->assertOk()
+            ->assertSee('Proveedores')
+            ->assertSee(route('warehouses.suppliers.index', $warehouse), false);
+    }
+
+    public function test_manager_sidebar_lists_only_assigned_warehouses(): void
+    {
+        $manager = User::factory()->warehouseManager()->create();
+        $assigned = Warehouse::factory()->create(['name' => 'Almacén Asignado']);
+        $other = Warehouse::factory()->create(['name' => 'Almacén No Asignado']);
+        $manager->warehouses()->attach($assigned);
+
+        $this->actingAs($manager)
+            ->get(route('warehouses.suppliers.index', $assigned))
+            ->assertOk()
+            ->assertSee('MIS ALMACENES')
+            ->assertSee('Almacén Asignado')
+            ->assertDontSee('Almacén No Asignado')
+            ->assertSee(route('warehouses.suppliers.index', $assigned), false)
+            ->assertDontSee(route('warehouses.suppliers.index', $other), false);
+    }
+
+    public function test_nurse_does_not_see_supplier_navigation(): void
+    {
+        $nurse = User::factory()->nurse()->create();
+        $warehouse = Warehouse::factory()->create();
+        $nurse->warehouses()->attach($warehouse);
+
+        $this->actingAs($nurse)
+            ->get(route('home'))
+            ->assertOk()
+            ->assertDontSee('MIS ALMACENES')
+            ->assertDontSee(route('warehouses.suppliers.index', $warehouse), false);
+    }
+
+    public function test_supplier_views_render_context_optional_values_and_forms(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create(['name' => 'Clínica Centro']);
+        $supplier = Supplier::factory()->for($warehouse)->create([
+            'name' => 'Proveedor sin contacto',
+            'contact_name' => null,
+            'phone' => null,
+            'email' => null,
+        ]);
+
+        $this->actingAs($administrator)
+            ->get(route('warehouses.suppliers.index', $warehouse))
+            ->assertOk()
+            ->assertSee('Almacén: Clínica Centro')
+            ->assertSee('Proveedor sin contacto')
+            ->assertSee('—')
+            ->assertSee('¿Eliminar proveedor?')
+            ->assertSee(route('warehouses.suppliers.destroy', [$warehouse, $supplier]), false);
+
+        $this->get(route('warehouses.suppliers.create', $warehouse))
+            ->assertOk()
+            ->assertSee('Nombre del proveedor')
+            ->assertDontSee('warehouse_id');
+        $this->get(route('warehouses.suppliers.edit', [$warehouse, $supplier]))
+            ->assertOk()
+            ->assertSee('Proveedor sin contacto')
+            ->assertSee('Guardar cambios');
+    }
+
     public function test_supplier_and_warehouse_relationships_work(): void
     {
         $warehouse = Warehouse::factory()->create();
