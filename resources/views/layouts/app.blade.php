@@ -58,6 +58,10 @@
                         <i class="bi bi-tags" aria-hidden="true"></i>
                         <span>Categorías</span>
                     </a>
+                    <a href="{{ route('brands.index') }}" class="admin-nav-link {{ request()->routeIs('brands.*') ? 'active' : '' }}">
+                        <i class="bi bi-award" aria-hidden="true"></i>
+                        <span>Marcas</span>
+                    </a>
                 @elseif (Auth::user()->role === \App\Enums\UserRole::WAREHOUSE_MANAGER)
                     @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
                     @if ($assignedWarehouses->isNotEmpty())
