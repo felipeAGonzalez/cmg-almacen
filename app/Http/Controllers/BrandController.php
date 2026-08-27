@@ -49,6 +49,10 @@ class BrandController extends Controller
 
     public function destroy(Brand $brand): RedirectResponse
     {
+        if ($brand->products()->exists()) {
+            return redirect()->route('brands.index')->with('error', 'No se puede eliminar la marca porque está siendo utilizada por productos.');
+        }
+
         $brand->delete();
 
         return redirect()

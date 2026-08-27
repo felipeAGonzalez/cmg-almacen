@@ -2,6 +2,7 @@
 
 use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
@@ -32,6 +33,9 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         ->except('show')
         ->middleware('role:administrator');
 
+    Route::resource('products', ProductController::class)
+        ->except('show')
+        ->middleware('role:administrator');
 
     Route::resource('units', UnitController::class)
         ->except('show')
