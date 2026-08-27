@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
@@ -21,6 +22,11 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::resource('users', UserController::class)
         ->except('show')
         ->middleware('role:administrator');
+
+    Route::resource('categories', CategoryController::class)
+        ->except('show')
+        ->middleware('role:administrator');
+
 
 
     Route::resource('units', UnitController::class)
