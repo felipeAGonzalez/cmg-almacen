@@ -12,6 +12,7 @@ class DatabaseSeeder extends Seeder
     public function run(): void
     {
         $this->call(RootUserSeeder::class);
+        $this->call(CategorySeeder::class);
 
         User::create([
             'name' => 'Admin',
