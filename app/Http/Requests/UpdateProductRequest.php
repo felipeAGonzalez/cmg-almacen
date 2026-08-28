@@ -26,6 +26,7 @@ class UpdateProductRequest extends FormRequest
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'brand_id' => ['required', 'integer', 'exists:brands,id'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'requires_expiration' => ['boolean'],
         ];
     }
 
@@ -43,6 +44,10 @@ class UpdateProductRequest extends FormRequest
 
     protected function prepareForValidation(): void
     {
+        if (! $this->exists('requires_expiration')) {
+            $this->merge(['requires_expiration' => false]);
+        }
+
         foreach (['name', 'code', 'barcode', 'description'] as $field) {
             $value = $this->input($field);
             if (is_string($value)) {

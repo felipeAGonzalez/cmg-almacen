@@ -20,7 +20,7 @@
         @else
             <div class="table-responsive">
                 <table class="table admin-table align-middle">
-                    <thead><tr><th scope="col">Producto</th><th scope="col">Código</th><th scope="col">Unidad</th><th scope="col">Categoría</th><th scope="col">Marca</th><th scope="col" class="text-end">Acciones</th></tr></thead>
+                    <thead><tr><th scope="col">Producto</th><th scope="col">Código</th><th scope="col">Unidad</th><th scope="col">Categoría</th><th scope="col">Marca</th><th scope="col">Caducidad</th><th scope="col" class="text-end">Acciones</th></tr></thead>
                     <tbody>
                         @foreach ($products as $product)
                             <tr>
@@ -35,6 +35,7 @@
                                 <td>{{ $product->unit->name }}</td>
                                 <td>{{ $product->category->name }}</td>
                                 <td>{{ $product->brand->name }}</td>
+                                <td><span class="badge {{ $product->requires_expiration ? 'text-bg-warning' : 'text-bg-light border' }}">{{ $product->requires_expiration ? 'Sí' : 'No' }}</span></td>
                                 <td class="text-end text-nowrap">
                                     <a href="{{ route('products.edit', $product) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $product->name }}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
                                     <button type="button" class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteProductModal" data-modal-name="{{ $product->name }}" data-modal-name-target="#deleteProductName" data-modal-delete-url="{{ route('products.destroy', $product) }}" data-modal-form-target="#deleteProductForm"><i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button>

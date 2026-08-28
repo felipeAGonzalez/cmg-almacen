@@ -21,7 +21,19 @@ class Product extends Model
         'code',
         'barcode',
         'description',
+        'requires_expiration',
     ];
+
+    protected $attributes = [
+        'requires_expiration' => false,
+    ];
+
+    protected function casts(): array
+    {
+        return [
+            'requires_expiration' => 'boolean',
+        ];
+    }
 
     public function unit(): BelongsTo
     {

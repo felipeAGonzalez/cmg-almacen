@@ -23,6 +23,7 @@ class StoreProductRequest extends FormRequest
             'category_id' => ['required', 'integer', 'exists:categories,id'],
             'brand_id' => ['required', 'integer', 'exists:brands,id'],
             'description' => ['nullable', 'string', 'max:2000'],
+            'requires_expiration' => ['boolean'],
         ];
     }
 
@@ -52,6 +53,7 @@ class StoreProductRequest extends FormRequest
             'brand_id.exists' => 'La marca seleccionada no existe.',
             'description.string' => 'La descripción debe ser texto.',
             'description.max' => 'La descripción no puede tener más de 2000 caracteres.',
+            'requires_expiration.boolean' => 'El control de caducidad debe ser válido.',
         ];
     }
 
@@ -61,12 +63,16 @@ class StoreProductRequest extends FormRequest
         return [
             'name' => 'nombre', 'code' => 'código interno', 'barcode' => 'código de barras',
             'unit_id' => 'unidad', 'category_id' => 'categoría', 'brand_id' => 'marca',
-            'description' => 'descripción',
+            'description' => 'descripción', 'requires_expiration' => 'control de caducidad',
         ];
     }
 
     protected function prepareForValidation(): void
     {
+        if (! $this->exists('requires_expiration')) {
+            $this->merge(['requires_expiration' => false]);
+        }
+
         foreach (['name', 'code', 'barcode', 'description'] as $field) {
             $value = $this->input($field);
             if (is_string($value)) {

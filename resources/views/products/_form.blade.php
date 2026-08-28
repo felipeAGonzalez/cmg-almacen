@@ -74,6 +74,13 @@
 
     <div class="form-section border-top pt-4 mt-4">
         <h3 class="h6 fw-bold mb-3">Información adicional</h3>
+        <div class="form-check form-switch mb-4">
+            <input type="hidden" name="requires_expiration" value="0">
+            <input class="form-check-input @error('requires_expiration') is-invalid @enderror" type="checkbox" role="switch" id="requires_expiration" name="requires_expiration" value="1" @checked(old('requires_expiration', $product->requires_expiration ?? false))>
+            <label class="form-check-label fw-semibold" for="requires_expiration">Controlar caducidad</label>
+            <div class="form-text">Activa esta opción cuando las existencias de este producto deban registrar fecha de caducidad.</div>
+            @error('requires_expiration') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        </div>
         <label for="description" class="form-label">Descripción <span class="text-body-secondary fw-normal">(Opcional)</span></label>
         <textarea id="description" name="description" class="form-control @error('description') is-invalid @enderror" rows="5" maxlength="2000" placeholder="Describe brevemente el producto">{{ old('description', $product->description ?? '') }}</textarea>
         <div class="form-text">Opcional</div>
