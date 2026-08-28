@@ -44,6 +44,11 @@ class User extends Authenticatable
 
     public function canManageSuppliersIn(Warehouse $warehouse): bool
     {
+        return $this->canManageWarehouse($warehouse);
+    }
+
+    public function canManageWarehouse(Warehouse $warehouse): bool
+    {
         if ($this->isAdmin()) {
             return true;
         }

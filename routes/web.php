@@ -1,12 +1,16 @@
 <?php
 
 use App\Http\Controllers\BrandController;
+use App\Http\Controllers\CabinetController;
+use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
 use App\Http\Controllers\WarehouseController;
+use App\Http\Controllers\WarehouseInventoryController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
 
@@ -45,9 +49,31 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         ->except('show')
         ->middleware('role:administrator');
 
+    Route::resource('warehouses.inventory', WarehouseInventoryController::class)
+        ->parameters(['inventory' => 'inventoryItem'])
+        ->except('show')
+        ->middleware('inventory.access')
+        ->scoped();
+
     Route::resource('warehouses.suppliers', SupplierController::class)
         ->except('show')
         ->middleware('supplier.access')
+        ->scoped();
+
+    Route::resource('warehouses.cabinets.inventory', CabinetInventoryController::class)
+        ->parameters(['inventory' => 'inventoryItem'])
+        ->except('show')
+        ->middleware('inventory.access')
+        ->scoped();
+
+    Route::resource('warehouses.cabinets', CabinetController::class)
+        ->except('show')
+        ->middleware('cabinet.access')
+        ->scoped();
+
+    Route::resource('warehouses.locations', LocationController::class)
+        ->except('show')
+        ->middleware('location.access')
         ->scoped();
 });
 

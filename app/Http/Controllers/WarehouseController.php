@@ -62,6 +62,24 @@ class WarehouseController extends Controller
                 ->with('error', 'No se puede eliminar el almacén porque tiene proveedores registrados.');
         }
 
+        if ($warehouse->locations()->exists()) {
+            return redirect()
+                ->route('warehouses.index')
+                ->with('error', 'No se puede eliminar el almacén porque tiene ubicaciones registradas.');
+        }
+
+        if ($warehouse->cabinets()->exists()) {
+            return redirect()
+                ->route('warehouses.index')
+                ->with('error', 'No se puede eliminar el almacén porque tiene gabinetes registrados.');
+        }
+
+        if ($warehouse->inventoryItems()->exists()) {
+            return redirect()
+                ->route('warehouses.index')
+                ->with('error', 'No se puede eliminar el almacén porque tiene productos configurados en su inventario.');
+        }
+
         $warehouse->delete();
 
         return redirect()

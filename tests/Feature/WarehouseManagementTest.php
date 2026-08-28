@@ -3,6 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
+use App\Models\Cabinet;
+use App\Models\Location;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -171,6 +173,54 @@ class WarehouseManagementTest extends TestCase
             );
         $this->assertModelExists($warehouse);
         $this->assertModelExists($supplier);
+    }
+
+    public function test_a_warehouse_with_locations_cannot_be_deleted(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create();
+        $location = Location::factory()->for($warehouse)->create();
+
+        $this->actingAs($administrator)
+            ->delete(route('warehouses.destroy', $warehouse))
+            ->assertRedirect(route('warehouses.index'))
+            ->assertSessionHas(
+                'error',
+                'No se puede eliminar el almacén porque tiene ubicaciones registradas.',
+            );
+
+        $this->assertModelExists($warehouse);
+        $this->assertModelExists($location);
+    }
+
+    public function test_a_warehouse_with_cabinets_cannot_be_deleted(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create();
+        $cabinet = Cabinet::factory()->for($warehouse)->create();
+
+        $this->actingAs($administrator)
+            ->delete(route('warehouses.destroy', $warehouse))
+            ->assertRedirect(route('warehouses.index'))
+            ->assertSessionHas(
+                'error',
+                'No se puede eliminar el almacén porque tiene gabinetes registrados.',
+            );
+
+        $this->assertModelExists($warehouse);
+        $this->assertModelExists($cabinet);
+    }
+
+    public function test_a_warehouse_without_users_suppliers_locations_or_cabinets_can_be_deleted(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create();
+
+        $this->actingAs($administrator)
+            ->delete(route('warehouses.destroy', $warehouse))
+            ->assertSessionHas('success', 'Almacén eliminado correctamente.');
+
+        $this->assertModelMissing($warehouse);
     }
 
     public function test_the_index_is_alphabetical_and_includes_the_user_count(): void

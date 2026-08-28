@@ -2,40 +2,26 @@
 
 namespace App\Models;
 
-use Database\Factories\ProductFactory;
+use Database\Factories\LocationFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 
-class Product extends Model
+class Location extends Model
 {
-    /** @use HasFactory<ProductFactory> */
+    /** @use HasFactory<LocationFactory> */
     use HasFactory;
 
     protected $fillable = [
-        'unit_id',
-        'category_id',
-        'brand_id',
         'name',
-        'code',
-        'barcode',
         'description',
     ];
 
-    public function unit(): BelongsTo
+    /** @return BelongsTo<Warehouse, $this> */
+    public function warehouse(): BelongsTo
     {
-        return $this->belongsTo(Unit::class);
-    }
-
-    public function category(): BelongsTo
-    {
-        return $this->belongsTo(Category::class);
-    }
-
-    public function brand(): BelongsTo
-    {
-        return $this->belongsTo(Brand::class);
+        return $this->belongsTo(Warehouse::class);
     }
 
     /** @return HasMany<InventoryItem, $this> */

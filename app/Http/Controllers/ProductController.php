@@ -50,6 +50,11 @@ class ProductController extends Controller
 
     public function destroy(Product $product): RedirectResponse
     {
+        if ($product->inventoryItems()->exists()) {
+            return redirect()->route('products.index')
+                ->with('error', 'No se puede eliminar el producto porque está registrado en inventarios.');
+        }
+
         $product->delete();
 
         return redirect()->route('products.index')->with('success', 'Producto eliminado correctamente.');

@@ -1,5 +1,8 @@
 <?php
 
+use App\Http\Middleware\EnsureUserCanManageCabinets;
+use App\Http\Middleware\EnsureUserCanManageInventory;
+use App\Http\Middleware\EnsureUserCanManageLocations;
 use App\Http\Middleware\EnsureUserCanManageSuppliers;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\PreventBackHistory;
@@ -18,6 +21,9 @@ return Application::configure(basePath: dirname(__DIR__))
         $middleware->alias([
             'prevent.back' => PreventBackHistory::class,
             'role' => EnsureUserHasRole::class,
+            'cabinet.access' => EnsureUserCanManageCabinets::class,
+            'inventory.access' => EnsureUserCanManageInventory::class,
+            'location.access' => EnsureUserCanManageLocations::class,
             'supplier.access' => EnsureUserCanManageSuppliers::class,
         ]);
 
