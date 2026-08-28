@@ -58,6 +58,17 @@
                                             <i class="bi bi-truck me-1" aria-hidden="true"></i>Proveedores
                                         </a>
                                     @endif
+                                    @if (Auth::user()->canManageWarehouse($warehouse))
+                                        <a href="{{ route('warehouses.locations.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver ubicaciones de {{ $warehouse->name }}">
+                                            <i class="bi bi-geo-alt me-1" aria-hidden="true"></i>Ubicaciones
+                                        </a>
+                                        <a href="{{ route('warehouses.cabinets.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver gabinetes de {{ $warehouse->name }}">
+                                            <i class="bi bi-archive me-1" aria-hidden="true"></i>Gabinetes
+                                        </a>
+                                        <a href="{{ route('warehouses.inventory.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver inventario de {{ $warehouse->name }}">
+                                            <i class="bi bi-clipboard-data me-1" aria-hidden="true"></i>Inventario
+                                        </a>
+                                    @endif
                                     <a href="{{ route('warehouses.edit', $warehouse) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $warehouse->name }}">
                                         <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar
                                     </a>

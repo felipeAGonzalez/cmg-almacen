@@ -71,12 +71,22 @@
                     @if ($assignedWarehouses->isNotEmpty())
                         <span class="admin-nav-label mt-4">MIS ALMACENES</span>
                         @foreach ($assignedWarehouses as $assignedWarehouse)
-                            <a
-                                href="{{ route('warehouses.suppliers.index', $assignedWarehouse) }}"
-                                class="admin-nav-link {{ request()->routeIs('warehouses.suppliers.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}"
-                            >
-                                <i class="bi bi-building" aria-hidden="true"></i>
-                                <span>{{ $assignedWarehouse->name }}</span>
+                            <span class="admin-nav-label mt-3">{{ $assignedWarehouse->name }}</span>
+                            <a href="{{ route('warehouses.suppliers.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.suppliers.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-truck" aria-hidden="true"></i>
+                                <span>Proveedores</span>
+                            </a>
+                            <a href="{{ route('warehouses.locations.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.locations.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-geo-alt" aria-hidden="true"></i>
+                                <span>Ubicaciones</span>
+                            </a>
+                            <a href="{{ route('warehouses.cabinets.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.cabinets.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-archive" aria-hidden="true"></i>
+                                <span>Gabinetes</span>
+                            </a>
+                            <a href="{{ route('warehouses.inventory.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.inventory.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-clipboard-data" aria-hidden="true"></i>
+                                <span>Inventario</span>
                             </a>
                         @endforeach
                     @endif
