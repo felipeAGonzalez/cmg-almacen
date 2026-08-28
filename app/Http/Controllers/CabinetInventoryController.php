@@ -60,6 +60,16 @@ class CabinetInventoryController extends Controller
 
     public function destroy(Warehouse $warehouse, Cabinet $cabinet, InventoryItem $inventoryItem): RedirectResponse
     {
+        if ($inventoryItem->outgoingTransferItems()->exists() || $inventoryItem->incomingTransferItems()->exists()) {
+            return redirect()->route('warehouses.cabinets.inventory.index', [$warehouse, $cabinet])
+                ->with('error', 'No se puede retirar el producto porque tiene movimientos de inventario registrados.');
+        }
+
+        if ($inventoryItem->entryItems()->exists() || $inventoryItem->batches()->exists()) {
+            return redirect()->route('warehouses.cabinets.inventory.index', [$warehouse, $cabinet])
+                ->with('error', 'No se puede retirar el producto porque tiene existencias o entradas registradas.');
+        }
+
         $inventoryItem->delete();
 
         return redirect()->route('warehouses.cabinets.inventory.index', [$warehouse, $cabinet])

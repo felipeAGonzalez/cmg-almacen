@@ -1,9 +1,11 @@
 <?php
 
 use App\Http\Middleware\EnsureUserCanManageCabinets;
+use App\Http\Middleware\EnsureUserCanManageEntries;
 use App\Http\Middleware\EnsureUserCanManageInventory;
 use App\Http\Middleware\EnsureUserCanManageLocations;
 use App\Http\Middleware\EnsureUserCanManageSuppliers;
+use App\Http\Middleware\EnsureUserCanManageTransfers;
 use App\Http\Middleware\EnsureUserHasRole;
 use App\Http\Middleware\PreventBackHistory;
 use Illuminate\Foundation\Application;
@@ -22,9 +24,11 @@ return Application::configure(basePath: dirname(__DIR__))
             'prevent.back' => PreventBackHistory::class,
             'role' => EnsureUserHasRole::class,
             'cabinet.access' => EnsureUserCanManageCabinets::class,
+            'entry.access' => EnsureUserCanManageEntries::class,
             'inventory.access' => EnsureUserCanManageInventory::class,
             'location.access' => EnsureUserCanManageLocations::class,
             'supplier.access' => EnsureUserCanManageSuppliers::class,
+            'transfer.access' => EnsureUserCanManageTransfers::class,
         ]);
 
         // Aplica no-cache a TODAS las rutas web: evita que el browser cachee

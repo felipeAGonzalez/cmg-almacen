@@ -6,6 +6,7 @@ use Database\Factories\CabinetFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphMany;
 
 class Cabinet extends Model
@@ -28,5 +29,10 @@ class Cabinet extends Model
     public function inventoryItems(): MorphMany
     {
         return $this->morphMany(InventoryItem::class, 'stockable');
+    }
+
+    public function inventoryTransfers(): HasMany
+    {
+        return $this->hasMany(InventoryTransfer::class);
     }
 }

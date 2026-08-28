@@ -51,4 +51,15 @@ class Warehouse extends Model
     {
         return $this->morphMany(InventoryItem::class, 'stockable');
     }
+
+    /** @return HasMany<Entry, $this> */
+    public function entries(): HasMany
+    {
+        return $this->hasMany(Entry::class);
+    }
+
+    public function inventoryTransfers(): HasMany
+    {
+        return $this->hasMany(InventoryTransfer::class);
+    }
 }

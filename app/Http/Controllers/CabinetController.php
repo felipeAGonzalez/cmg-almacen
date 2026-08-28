@@ -46,6 +46,11 @@ class CabinetController extends Controller
 
     public function destroy(Warehouse $warehouse, Cabinet $cabinet): RedirectResponse
     {
+        if ($cabinet->inventoryTransfers()->exists()) {
+            return redirect()->route('warehouses.cabinets.index', $warehouse)
+                ->with('error', 'No se puede eliminar el gabinete porque tiene transferencias registradas.');
+        }
+
         if ($cabinet->inventoryItems()->exists()) {
             return redirect()->route('warehouses.cabinets.index', $warehouse)
                 ->with('error', 'No se puede eliminar el gabinete porque tiene productos configurados en su inventario.');

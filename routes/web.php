@@ -4,6 +4,8 @@ use App\Http\Controllers\BrandController;
 use App\Http\Controllers\CabinetController;
 use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
+use App\Http\Controllers\EntryController;
+use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
@@ -48,6 +50,17 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::resource('warehouses', WarehouseController::class)
         ->except('show')
         ->middleware('role:administrator');
+
+    Route::resource('warehouses.entries', EntryController::class)
+        ->only(['index', 'create', 'store', 'show'])
+        ->middleware('entry.access')
+        ->scoped();
+
+    Route::resource('warehouses.transfers', InventoryTransferController::class)
+        ->parameters(['transfers' => 'inventoryTransfer'])
+        ->only(['index', 'create', 'store', 'show'])
+        ->middleware('transfer.access')
+        ->scoped();
 
     Route::resource('warehouses.inventory', WarehouseInventoryController::class)
         ->parameters(['inventory' => 'inventoryItem'])
