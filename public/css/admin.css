@@ -393,3 +393,118 @@ body.admin-body {
         width: 100%;
     }
 }
+
+.entry-item {
+    background: #f8fafc;
+    border: 1px solid var(--cmg-border);
+    border-radius: 0.75rem;
+    margin: 0 0 1rem;
+    padding: 1rem;
+}
+
+.entry-item-title,
+.entry-detail-label {
+    color: #687587;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    text-transform: uppercase;
+}
+
+.entry-item-title {
+    float: none;
+    margin-bottom: 0.75rem;
+    width: auto;
+}
+
+.entry-item-footer,
+.entry-total,
+.entry-show-total {
+    align-items: center;
+    display: flex;
+    justify-content: space-between;
+}
+
+.entry-item-footer {
+    border-top: 1px solid var(--cmg-border);
+    margin-top: 1rem;
+    padding-top: 0.75rem;
+}
+
+.entry-total,
+.entry-show-total {
+    background: #edf3fa;
+    color: var(--cmg-primary-dark);
+    font-size: 1.05rem;
+    padding: 1rem 1.25rem;
+}
+
+.entry-total strong,
+.entry-show-total strong {
+    font-size: 1.35rem;
+}
+
+.entry-lot {
+    background: #eef2f7;
+    border-radius: 0.35rem;
+    color: #334155;
+    padding: 0.2rem 0.4rem;
+    white-space: nowrap;
+}
+
+@media (max-width: 767.98px) {
+    .entry-item-footer,
+    .entry-total,
+    .entry-show-total {
+        align-items: stretch;
+        flex-direction: column;
+        gap: 0.75rem;
+    }
+
+    .entry-item-footer .btn {
+        width: 100%;
+    }
+}
+
+.transfer-item {
+    background: #f8fafc;
+    border: 1px solid var(--cmg-border);
+    border-radius: 0.75rem;
+    margin: 0 0 1rem;
+    padding: 1rem;
+}
+
+.transfer-item-title {
+    color: #687587;
+    float: none;
+    font-size: 0.78rem;
+    font-weight: 700;
+    letter-spacing: 0.03em;
+    margin-bottom: 0.75rem;
+    text-transform: uppercase;
+    width: auto;
+}
+
+.transfer-stock {
+    align-items: center;
+    background: #edf3fa;
+    border: 1px solid #d8e4f0;
+    border-radius: 0.5rem;
+    color: var(--cmg-primary-dark);
+    display: flex;
+    font-size: 1.05rem;
+    font-weight: 700;
+    min-height: 38px;
+    padding: 0.375rem 0.75rem;
+}
+
+.transfer-detail-product .admin-table td,
+.transfer-detail-product .admin-table th {
+    min-width: 145px;
+}
+
+@media (max-width: 991.98px) {
+    .transfer-item [data-remove-transfer-item] {
+        margin-top: 0.25rem;
+    }
+}

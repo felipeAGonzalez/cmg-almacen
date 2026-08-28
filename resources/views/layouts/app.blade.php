@@ -88,6 +88,14 @@
                                 <i class="bi bi-clipboard-data" aria-hidden="true"></i>
                                 <span>Inventario</span>
                             </a>
+                            <a href="{{ route('warehouses.entries.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.entries.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-receipt" aria-hidden="true"></i>
+                                <span>Entradas</span>
+                            </a>
+                            <a href="{{ route('warehouses.transfers.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.transfers.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
+                                <span>Transferencias</span>
+                            </a>
                         @endforeach
                     @endif
                 @endif

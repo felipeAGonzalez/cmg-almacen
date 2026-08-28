@@ -68,6 +68,12 @@
                                         <a href="{{ route('warehouses.inventory.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver inventario de {{ $warehouse->name }}">
                                             <i class="bi bi-clipboard-data me-1" aria-hidden="true"></i>Inventario
                                         </a>
+                                        <a href="{{ route('warehouses.entries.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver entradas de {{ $warehouse->name }}">
+                                            <i class="bi bi-receipt me-1" aria-hidden="true"></i>Entradas
+                                        </a>
+                                        <a href="{{ route('warehouses.transfers.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver transferencias de {{ $warehouse->name }}">
+                                            <i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>Transferencias
+                                        </a>
                                     @endif
                                     <a href="{{ route('warehouses.edit', $warehouse) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $warehouse->name }}">
                                         <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar
