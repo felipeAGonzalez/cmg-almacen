@@ -50,6 +50,11 @@ class SupplierController extends Controller
 
     public function destroy(Warehouse $warehouse, Supplier $supplier): RedirectResponse
     {
+        if ($supplier->entries()->exists()) {
+            return redirect()->route('warehouses.suppliers.index', $warehouse)
+                ->with('error', 'No se puede eliminar el proveedor porque tiene entradas registradas.');
+        }
+
         $supplier->delete();
 
         return redirect()

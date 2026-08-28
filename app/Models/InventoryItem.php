@@ -6,6 +6,7 @@ use Database\Factories\InventoryItemFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Database\Eloquent\Relations\MorphTo;
 
 /**
@@ -47,5 +48,27 @@ class InventoryItem extends Model
     public function location(): BelongsTo
     {
         return $this->belongsTo(Location::class);
+    }
+
+    /** @return HasMany<EntryItem, $this> */
+    public function entryItems(): HasMany
+    {
+        return $this->hasMany(EntryItem::class);
+    }
+
+    /** @return HasMany<InventoryBatch, $this> */
+    public function batches(): HasMany
+    {
+        return $this->hasMany(InventoryBatch::class);
+    }
+
+    public function outgoingTransferItems(): HasMany
+    {
+        return $this->hasMany(InventoryTransferItem::class, 'source_inventory_item_id');
+    }
+
+    public function incomingTransferItems(): HasMany
+    {
+        return $this->hasMany(InventoryTransferItem::class, 'destination_inventory_item_id');
     }
 }
