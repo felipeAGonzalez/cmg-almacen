@@ -5,6 +5,7 @@ use App\Http\Controllers\CabinetController;
 use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EntryController;
+use App\Http\Controllers\InventoryKardexController;
 use App\Http\Controllers\InventoryOutboundController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\LocationController;
@@ -68,6 +69,15 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         ->only(['index', 'create', 'store', 'show'])
         ->middleware('outbound.access')
         ->scoped();
+
+    Route::get('warehouses/{warehouse}/kardex', [InventoryKardexController::class, 'warehouse'])
+        ->middleware('inventory.access')
+        ->name('warehouses.kardex.index');
+
+    Route::get('warehouses/{warehouse}/cabinets/{cabinet}/kardex', [InventoryKardexController::class, 'cabinet'])
+        ->middleware('inventory.access')
+        ->scopeBindings()
+        ->name('warehouses.cabinets.kardex.index');
 
     Route::resource('warehouses.inventory', WarehouseInventoryController::class)
         ->parameters(['inventory' => 'inventoryItem'])

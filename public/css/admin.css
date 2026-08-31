@@ -514,3 +514,15 @@ body.admin-body {
 @media (max-width: 991.98px) {
     .transfer-item [data-remove-outbound-item] { margin-top: 0.25rem; }
 }
+
+.kardex-table th,
+.kardex-table td {
+    min-width: 115px;
+}
+
+.kardex-table th:nth-child(3),
+.kardex-table td:nth-child(3),
+.kardex-table th:nth-child(4),
+.kardex-table td:nth-child(4) {
+    min-width: 190px;
+}

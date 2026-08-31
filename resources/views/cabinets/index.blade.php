@@ -58,6 +58,7 @@
                                 <td class="text-wrap text-body-secondary">{{ $cabinet->description ?: '—' }}</td>
                                 <td class="text-end text-nowrap">
                                     <a href="{{ route('warehouses.cabinets.inventory.index', [$warehouse, $cabinet]) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver inventario de {{ $cabinet->name }}"><i class="bi bi-clipboard-data me-1" aria-hidden="true"></i>Inventario</a>
+                                    <a href="{{ route('warehouses.cabinets.kardex.index', [$warehouse, $cabinet]) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver Kardex de {{ $cabinet->name }}"><i class="bi bi-journal-text me-1" aria-hidden="true"></i>Kardex</a>
                                     <a href="{{ route('warehouses.cabinets.edit', [$warehouse, $cabinet]) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $cabinet->name }}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
                                     <button type="button" class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#deleteCabinetModal" data-modal-name="{{ $cabinet->name }}" data-modal-name-target="#deleteCabinetName" data-modal-delete-url="{{ route('warehouses.cabinets.destroy', [$warehouse, $cabinet]) }}" data-modal-form-target="#deleteCabinetForm"><i class="bi bi-trash me-1" aria-hidden="true"></i>Eliminar</button>
                                 </td>

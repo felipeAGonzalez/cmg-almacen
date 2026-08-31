@@ -77,6 +77,9 @@
                                         <a href="{{ route('warehouses.outbounds.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver salidas de {{ $warehouse->name }}">
                                             <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Salidas
                                         </a>
+                                        <a href="{{ route('warehouses.kardex.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver Kardex de {{ $warehouse->name }}">
+                                            <i class="bi bi-journal-text me-1" aria-hidden="true"></i>Kardex
+                                        </a>
                                     @endif
                                     <a href="{{ route('warehouses.edit', $warehouse) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $warehouse->name }}">
                                         <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar

@@ -100,6 +100,10 @@
                                 <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
                                 <span>Salidas</span>
                             </a>
+                            <a href="{{ route('warehouses.kardex.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.kardex.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-journal-text" aria-hidden="true"></i>
+                                <span>Kardex</span>
+                            </a>
                         @endforeach
                     @endif
                 @endif
