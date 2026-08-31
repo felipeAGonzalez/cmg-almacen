@@ -16,6 +16,7 @@ class CabinetInventoryController extends Controller
     public function index(Warehouse $warehouse, Cabinet $cabinet): View
     {
         $inventoryItems = $cabinet->inventoryItems()
+            ->withStockTotals()
             ->with('product.unit')
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))
             ->paginate(15);

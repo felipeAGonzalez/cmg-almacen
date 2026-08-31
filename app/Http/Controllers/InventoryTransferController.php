@@ -158,9 +158,7 @@ class InventoryTransferController extends Controller
     {
         return $warehouse->inventoryItems()
             ->with('product.unit')
-            ->withSum(['batches as usable_stock' => fn ($query) => $query
-                ->where('available_quantity', '>', 0)
-                ->where(fn ($batchQuery) => $batchQuery->whereNull('expiration_date')->orWhereDate('expiration_date', '>=', today()))], 'available_quantity')
+            ->withStockTotals()
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))
             ->get();
     }

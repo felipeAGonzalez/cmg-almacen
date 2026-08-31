@@ -16,6 +16,7 @@ class WarehouseInventoryController extends Controller
     public function index(Warehouse $warehouse): View
     {
         $inventoryItems = $warehouse->inventoryItems()
+            ->withStockTotals()
             ->with(['product.unit', 'location'])
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))
             ->paginate(15);

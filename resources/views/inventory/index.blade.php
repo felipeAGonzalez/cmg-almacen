@@ -47,7 +47,7 @@
     </div>
 
     <div class="alert alert-info border-0 shadow-sm" role="note">
-        <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>Esta pantalla configura los productos y sus niveles mínimo y máximo. Las cantidades físicas se registrarán posteriormente.
+        <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>La existencia se calcula a partir de los lotes disponibles. Los lotes vencidos se muestran por separado y no cuentan como existencia utilizable.
     </div>
 
     <section class="admin-card overflow-hidden" aria-labelledby="inventory-list-title">
@@ -71,8 +71,10 @@
                             <th scope="col">Producto</th>
                             <th scope="col">Unidad</th>
                             @unless ($isCabinet)<th scope="col">Ubicación</th>@endunless
-                            <th scope="col">Stock mínimo</th>
-                            <th scope="col">Stock máximo</th>
+                            <th scope="col">Existencia</th>
+                            <th scope="col">Mínimo</th>
+                            <th scope="col">Máximo</th>
+                            <th scope="col">Estado</th>
                             <th scope="col" class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -91,8 +93,16 @@
                                 </td>
                                 <td>{{ $inventoryItem->product->unit->name }}</td>
                                 @unless ($isCabinet)<td>{{ $inventoryItem->location?->name ?? 'Sin ubicación' }}</td>@endunless
-                                <td class="text-nowrap">{{ rtrim(rtrim(number_format((float) $inventoryItem->minimum_stock, 3, '.', ''), '0'), '.') }}</td>
-                                <td class="text-nowrap">{{ rtrim(rtrim(number_format((float) $inventoryItem->maximum_stock, 3, '.', ''), '0'), '.') }}</td>
+                                <td>
+                                    <strong class="d-block fs-6">{{ \App\Models\InventoryItem::formatQuantity($inventoryItem->usableStock()) }}</strong>
+                                    @if (bccomp($inventoryItem->expiredStock(), '0', 3) > 0)
+                                        <span class="small text-danger d-block">{{ \App\Models\InventoryItem::formatQuantity($inventoryItem->expiredStock()) }} vencidas</span>
+                                        <span class="small text-body-secondary d-block">Total físico: {{ \App\Models\InventoryItem::formatQuantity($inventoryItem->physicalStock()) }}</span>
+                                    @endif
+                                </td>
+                                <td class="text-nowrap">{{ \App\Models\InventoryItem::formatQuantity($inventoryItem->minimum_stock) }}</td>
+                                <td class="text-nowrap">{{ \App\Models\InventoryItem::formatQuantity($inventoryItem->maximum_stock) }}</td>
+                                <td><span class="badge {{ $inventoryItem->stockStatusBadgeClass() }}">{{ $inventoryItem->stockStatusLabel() }}</span></td>
                                 <td class="text-end text-nowrap">
                                     <a href="{{ $editRoute }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
                                     <button type="button" class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#removeInventoryItemModal" data-modal-name="{{ $inventoryItem->product->name }}" data-modal-name-target="#removeInventoryItemName" data-modal-delete-url="{{ $destroyRoute }}" data-modal-form-target="#removeInventoryItemForm"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Retirar del inventario</button>
