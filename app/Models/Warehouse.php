@@ -62,4 +62,9 @@ class Warehouse extends Model
     {
         return $this->hasMany(InventoryTransfer::class);
     }
+
+    public function inventoryOutbounds(): HasMany
+    {
+        return $this->hasMany(InventoryOutbound::class);
+    }
 }

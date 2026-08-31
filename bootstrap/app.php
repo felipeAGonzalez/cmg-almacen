@@ -4,6 +4,7 @@ use App\Http\Middleware\EnsureUserCanManageCabinets;
 use App\Http\Middleware\EnsureUserCanManageEntries;
 use App\Http\Middleware\EnsureUserCanManageInventory;
 use App\Http\Middleware\EnsureUserCanManageLocations;
+use App\Http\Middleware\EnsureUserCanManageOutbounds;
 use App\Http\Middleware\EnsureUserCanManageSuppliers;
 use App\Http\Middleware\EnsureUserCanManageTransfers;
 use App\Http\Middleware\EnsureUserHasRole;
@@ -27,6 +28,7 @@ return Application::configure(basePath: dirname(__DIR__))
             'entry.access' => EnsureUserCanManageEntries::class,
             'inventory.access' => EnsureUserCanManageInventory::class,
             'location.access' => EnsureUserCanManageLocations::class,
+            'outbound.access' => EnsureUserCanManageOutbounds::class,
             'supplier.access' => EnsureUserCanManageSuppliers::class,
             'transfer.access' => EnsureUserCanManageTransfers::class,
         ]);

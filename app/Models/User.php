@@ -70,4 +70,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(InventoryTransfer::class, 'transferred_by');
     }
+
+    public function inventoryOutbounds(): HasMany
+    {
+        return $this->hasMany(InventoryOutbound::class, 'processed_by');
+    }
 }

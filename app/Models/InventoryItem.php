@@ -163,4 +163,9 @@ class InventoryItem extends Model
     {
         return $this->hasMany(InventoryTransferItem::class, 'destination_inventory_item_id');
     }
+
+    public function outboundItems(): HasMany
+    {
+        return $this->hasMany(InventoryOutboundItem::class);
+    }
 }

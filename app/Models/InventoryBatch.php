@@ -67,4 +67,9 @@ class InventoryBatch extends Model
     {
         return $this->hasMany(InventoryTransferAllocation::class, 'destination_batch_id');
     }
+
+    public function outboundAllocations(): HasMany
+    {
+        return $this->hasMany(InventoryOutboundAllocation::class);
+    }
 }

@@ -10,8 +10,12 @@ use Illuminate\Validation\ValidationException;
 class InventoryBatchAllocator
 {
     /** @return Collection<int, array{batch: InventoryBatch, quantity: string}> */
-    public function allocate(InventoryItem $sourceInventoryItem, string $requestedQuantity, string $errorKey = 'items'): Collection
-    {
+    public function allocate(
+        InventoryItem $sourceInventoryItem,
+        string $requestedQuantity,
+        string $errorKey = 'items',
+        string $insufficientStockMessage = 'No hay existencia utilizable suficiente para transferir este producto.',
+    ): Collection {
         $batches = $sourceInventoryItem->batches()
             ->where('available_quantity', '>', 0)
             ->where(fn ($query) => $query->whereNull('expiration_date')->orWhereDate('expiration_date', '>=', today()))
@@ -40,7 +44,7 @@ class InventoryBatchAllocator
 
         if (bccomp($remaining, '0', 3) > 0) {
             throw ValidationException::withMessages([
-                $errorKey => 'No hay existencia utilizable suficiente para transferir este producto.',
+                $errorKey => $insufficientStockMessage,
             ]);
         }
 

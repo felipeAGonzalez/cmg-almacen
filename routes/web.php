@@ -5,6 +5,7 @@ use App\Http\Controllers\CabinetController;
 use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EntryController;
+use App\Http\Controllers\InventoryOutboundController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\ProductController;
@@ -60,6 +61,12 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         ->parameters(['transfers' => 'inventoryTransfer'])
         ->only(['index', 'create', 'store', 'show'])
         ->middleware('transfer.access')
+        ->scoped();
+
+    Route::resource('warehouses.outbounds', InventoryOutboundController::class)
+        ->parameters(['outbounds' => 'inventoryOutbound'])
+        ->only(['index', 'create', 'store', 'show'])
+        ->middleware('outbound.access')
         ->scoped();
 
     Route::resource('warehouses.inventory', WarehouseInventoryController::class)
