@@ -74,6 +74,9 @@
                                         <a href="{{ route('warehouses.transfers.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver transferencias de {{ $warehouse->name }}">
                                             <i class="bi bi-arrow-left-right me-1" aria-hidden="true"></i>Transferencias
                                         </a>
+                                        <a href="{{ route('warehouses.outbounds.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver salidas de {{ $warehouse->name }}">
+                                            <i class="bi bi-box-arrow-up-right me-1" aria-hidden="true"></i>Salidas
+                                        </a>
                                     @endif
                                     <a href="{{ route('warehouses.edit', $warehouse) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $warehouse->name }}">
                                         <i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar

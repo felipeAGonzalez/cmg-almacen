@@ -96,6 +96,10 @@
                                 <i class="bi bi-arrow-left-right" aria-hidden="true"></i>
                                 <span>Transferencias</span>
                             </a>
+                            <a href="{{ route('warehouses.outbounds.index', $assignedWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.outbounds.*') && request()->route('warehouse')?->is($assignedWarehouse) ? 'active' : '' }}">
+                                <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                                <span>Salidas</span>
+                            </a>
                         @endforeach
                     @endif
                 @endif

@@ -335,3 +335,72 @@ document.addEventListener('DOMContentLoaded', function () {
         }
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('[data-outbound-form]');
+    const section = document.querySelector('[data-outbound-items]');
+    if (!form || !section) return;
+
+    const list = section.querySelector('[data-outbound-items-list]');
+    const template = document.querySelector('[data-outbound-item-template]');
+    const addButton = section.querySelector('[data-add-outbound-item]');
+    const options = JSON.parse(section.dataset.inventoryOptions || '[]');
+    const byId = new Map(options.map(function (item) { return [String(item.id), item]; }));
+    const formatQuantity = function (value) {
+        return new Intl.NumberFormat('es-MX', { maximumFractionDigits: 3 }).format(Number.parseFloat(value) || 0);
+    };
+
+    function selectedIds(exceptRow) {
+        return new Set(Array.from(list.querySelectorAll('[data-outbound-item]'))
+            .filter(function (row) { return row !== exceptRow; })
+            .map(function (row) { return row.querySelector('[data-outbound-product]').value; })
+            .filter(Boolean));
+    }
+
+    function updateRow(row) {
+        const select = row.querySelector('[data-outbound-product]');
+        const selected = byId.get(select.value);
+        const quantity = Number.parseFloat(row.querySelector('[data-outbound-quantity]').value) || 0;
+        const used = selectedIds(row);
+        Array.from(select.options).forEach(function (option) {
+            if (option.value) option.disabled = used.has(option.value);
+        });
+        row.querySelector('[data-outbound-stock]').textContent = selected ? formatQuantity(selected.usableStock) : '—';
+        row.querySelector('[data-outbound-unit]').textContent = selected?.unit || 'Unidad';
+        row.querySelector('[data-outbound-stock-warning]').classList.toggle('d-none', !selected || quantity <= Number.parseFloat(selected.usableStock));
+    }
+
+    function updateRows() { list.querySelectorAll('[data-outbound-item]').forEach(updateRow); }
+    function reindexRows() {
+        const rows = list.querySelectorAll('[data-outbound-item]');
+        rows.forEach(function (row, index) {
+            row.querySelector('[data-outbound-item-number]').textContent = index + 1;
+            row.querySelectorAll('[name]').forEach(function (field) {
+                field.name = field.name.replace(/items\[[^\]]+\]/, `items[${index}]`);
+            });
+            row.querySelector('[data-remove-outbound-item]').disabled = rows.length === 1;
+        });
+    }
+    function initializeRow(row) {
+        row.querySelector('[data-outbound-product]').addEventListener('change', updateRows);
+        row.querySelector('[data-outbound-quantity]').addEventListener('input', function () { updateRow(row); });
+        row.querySelector('[data-remove-outbound-item]').addEventListener('click', function () {
+            if (list.querySelectorAll('[data-outbound-item]').length === 1) return;
+            row.remove(); reindexRows(); updateRows();
+        });
+    }
+
+    list.querySelectorAll('[data-outbound-item]').forEach(initializeRow);
+    reindexRows(); updateRows();
+    addButton.addEventListener('click', function () {
+        const wrapper = document.createElement('div');
+        wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', list.querySelectorAll('[data-outbound-item]').length).trim();
+        const row = wrapper.firstElementChild;
+        list.appendChild(row); initializeRow(row); reindexRows(); updateRows();
+        row.querySelector('[data-outbound-product]').focus();
+    });
+    form.addEventListener('submit', function () {
+        const submit = form.querySelector('[data-outbound-submit]');
+        if (submit) { submit.disabled = true; submit.setAttribute('aria-disabled', 'true'); }
+    });
+});

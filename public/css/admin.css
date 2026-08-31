@@ -508,3 +508,9 @@ body.admin-body {
         margin-top: 0.25rem;
     }
 }
+
+.outbound-note { max-width: 20rem; }
+
+@media (max-width: 991.98px) {
+    .transfer-item [data-remove-outbound-item] { margin-top: 0.25rem; }
+}

@@ -1,0 +1,13 @@
+@extends('layouts.app')
+
+@section('page-title', 'Salidas')
+
+@section('content')
+    <div class="page-heading"><div><nav aria-label="Ruta de navegación"><ol class="breadcrumb small mb-2">
+        @if(Auth::user()->isAdmin())<li class="breadcrumb-item"><a href="{{ route('warehouses.index') }}">Almacenes</a></li>@else<li class="breadcrumb-item"><a href="{{ route('home') }}">Inicio</a></li>@endif
+        <li class="breadcrumb-item">{{ $warehouse->name }}</li><li class="breadcrumb-item active">Salidas</li>
+    </ol></nav><h2>Salidas</h2><p>Consulta las salidas manuales de mercancía registradas en este almacén.</p><span class="badge text-bg-light border"><i class="bi bi-building me-1"></i>Almacén: {{ $warehouse->name }}</span></div><a href="{{ route('warehouses.outbounds.create', $warehouse) }}" class="btn btn-primary"><i class="bi bi-box-arrow-up-right me-2"></i>Registrar salida</a></div>
+    <section class="admin-card overflow-hidden"><div class="admin-card-header"><h3 class="h6 fw-bold mb-1">Salidas registradas</h3><p class="small text-body-secondary mb-0">{{ $outbounds->total() }} {{ $outbounds->total() === 1 ? 'salida' : 'salidas' }}</p></div>
+    @if($outbounds->isEmpty())<div class="empty-state"><span class="empty-state-icon"><i class="bi bi-box-arrow-up-right"></i></span><h3 class="h5">No hay salidas registradas en este almacén.</h3><p class="text-body-secondary mb-4">Registra una salida cuando la mercancía abandone el inventario por un motivo distinto a una transferencia o un vale.</p><a href="{{ route('warehouses.outbounds.create', $warehouse) }}" class="btn btn-primary">Registrar salida</a></div>
+    @else<div class="table-responsive"><table class="table admin-table align-middle"><thead><tr><th>Fecha</th><th>Motivo</th><th>Productos</th><th>Realizó</th><th>Comentario</th><th class="text-end">Acciones</th></tr></thead><tbody>@foreach($outbounds as $outbound)<tr><td class="text-nowrap">{{ $outbound->processed_at->format('d/m/Y H:i') }}</td><td><span class="badge text-bg-light border">{{ $outbound->reason->label() }}</span></td><td>{{ $outbound->items_count }} {{ $outbound->items_count === 1 ? 'producto' : 'productos' }}</td><td>{{ $outbound->processedBy->name }} {{ $outbound->processedBy->last_name_one }}</td><td><span class="d-inline-block text-wrap outbound-note">{{ $outbound->notes ?: '—' }}</span></td><td class="text-end"><a href="{{ route('warehouses.outbounds.show', [$warehouse, $outbound]) }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-eye me-1"></i>Ver detalle</a></td></tr>@endforeach</tbody></table></div>@if($outbounds->hasPages())<div class="border-top px-3 py-3">{{ $outbounds->onEachSide(1)->links('pagination::bootstrap-5') }}</div>@endif @endif</section>
+@endsection
