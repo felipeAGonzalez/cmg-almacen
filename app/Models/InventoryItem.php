@@ -168,4 +168,14 @@ class InventoryItem extends Model
     {
         return $this->hasMany(InventoryOutboundItem::class);
     }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(InventoryAdjustment::class);
+    }
+
+    public function inventoryAdjustments(): HasMany
+    {
+        return $this->adjustments();
+    }
 }

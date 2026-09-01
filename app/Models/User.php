@@ -75,4 +75,9 @@ class User extends Authenticatable
     {
         return $this->hasMany(InventoryOutbound::class, 'processed_by');
     }
+
+    public function inventoryAdjustments(): HasMany
+    {
+        return $this->hasMany(InventoryAdjustment::class, 'adjusted_by');
+    }
 }

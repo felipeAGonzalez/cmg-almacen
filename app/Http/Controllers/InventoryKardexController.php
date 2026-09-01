@@ -27,6 +27,8 @@ class InventoryKardexController extends Controller
                 InventoryKardexService::ENTRY => 'Entrada',
                 InventoryKardexService::TRANSFER_OUT => 'Transferencia enviada',
                 InventoryKardexService::MANUAL_OUTBOUND => 'Salida manual',
+                InventoryKardexService::ADJUSTMENT_IN => 'Ajuste positivo',
+                InventoryKardexService::ADJUSTMENT_OUT => 'Ajuste negativo',
             ],
         ]);
     }
@@ -41,7 +43,11 @@ class InventoryKardexController extends Controller
             'movements' => $this->kardex->forCabinet($warehouse, $cabinet, $filters),
             'inventoryItems' => $this->inventoryItems($cabinet->inventoryItems()),
             'filters' => $filters,
-            'movementTypes' => [InventoryKardexService::TRANSFER_IN => 'Transferencia recibida'],
+            'movementTypes' => [
+                InventoryKardexService::TRANSFER_IN => 'Transferencia recibida',
+                InventoryKardexService::ADJUSTMENT_IN => 'Ajuste positivo',
+                InventoryKardexService::ADJUSTMENT_OUT => 'Ajuste negativo',
+            ],
         ]);
     }
 

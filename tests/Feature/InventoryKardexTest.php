@@ -2,6 +2,7 @@
 
 namespace Tests\Feature;
 
+use App\Enums\InventoryAdjustmentReason;
 use App\Enums\InventoryOutboundReason;
 use App\Enums\UserRole;
 use App\Models\Cabinet;
@@ -172,6 +173,40 @@ class InventoryKardexTest extends TestCase
         $queryCount = count(DB::getQueryLog());
         DB::disableQueryLog();
         $this->assertLessThan(12, $queryCount);
+    }
+
+    public function test_adjustments_are_projected_and_filterable_in_both_contexts(): void
+    {
+        [$warehouse, $cabinet, $source, $destination, $user] = $this->context();
+        [, $rootBatch] = $this->entryBatch($warehouse, $source, '10', 'FAB-ADJ');
+        $transfer = $this->transfer($warehouse, $cabinet, $source, $user, '4');
+        $derivedBatch = $transfer->items()->firstOrFail()->allocations()->firstOrFail()->destinationBatch;
+        $payload = fn (int $batch, string $counted): array => [
+            'inventory_batch_id' => $batch, 'counted_quantity' => $counted,
+            'reason' => InventoryAdjustmentReason::PHYSICAL_COUNT->value, 'notes' => null,
+        ];
+
+        $this->actingAs($user)->post(route('warehouses.inventory.adjustments.store', [$warehouse, $source]), $payload($rootBatch->id, '8'))->assertSessionHasNoErrors();
+        $warehouseAdjustment = $source->adjustments()->latest('id')->firstOrFail();
+        $this->post(route('warehouses.cabinets.inventory.adjustments.store', [$warehouse, $cabinet, $destination]), $payload($derivedBatch->id, '2.5'))->assertSessionHasNoErrors();
+        $cabinetAdjustment = $destination->adjustments()->latest('id')->firstOrFail();
+
+        $warehouseMovement = app(InventoryKardexService::class)->forWarehouse($warehouse, ['movement_type' => 'adjustment_in'])->first();
+        $cabinetMovement = app(InventoryKardexService::class)->forCabinet($warehouse, $cabinet, ['movement_type' => 'adjustment_out'])->first();
+        $this->assertSame('2', $warehouseMovement->formatted_quantity);
+        $this->assertSame($rootBatch->internal_lot, $warehouseMovement->internal_lot);
+        $this->assertSame($user->name, $warehouseMovement->actor_name);
+        $this->assertSame('1.5', $cabinetMovement->formatted_quantity);
+        $this->assertSame($derivedBatch->internal_lot, $cabinetMovement->internal_lot);
+        $this->assertSame($rootBatch->internal_lot, $cabinetMovement->source_internal_lot);
+        $this->get(route('warehouses.kardex.index', [$warehouse, 'movement_type' => 'adjustment_in']))
+            ->assertOk()->assertSee('Ajuste positivo')->assertSee('Ver ajuste')
+            ->assertSee(route('warehouses.inventory.adjustments.show', [$warehouse, $source, $warehouseAdjustment]), false);
+        $this->get(route('warehouses.cabinets.kardex.index', [$warehouse, $cabinet, 'movement_type' => 'adjustment_out']))
+            ->assertOk()->assertSee('Ajuste negativo')->assertSee('Ver ajuste')
+            ->assertSee(route('warehouses.cabinets.inventory.adjustments.show', [$warehouse, $cabinet, $destination, $cabinetAdjustment]), false);
+        $this->assertSame(1, app(InventoryKardexService::class)->forWarehouse($warehouse, ['movement_type' => 'adjustment_in'])->total());
+        $this->assertSame(1, app(InventoryKardexService::class)->forCabinet($warehouse, $cabinet, ['movement_type' => 'adjustment_out'])->total());
     }
 
     private function context(): array

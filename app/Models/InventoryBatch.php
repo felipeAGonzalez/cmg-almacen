@@ -72,4 +72,9 @@ class InventoryBatch extends Model
     {
         return $this->hasMany(InventoryOutboundAllocation::class);
     }
+
+    public function adjustments(): HasMany
+    {
+        return $this->hasMany(InventoryAdjustment::class);
+    }
 }

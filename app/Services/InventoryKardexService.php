@@ -2,6 +2,7 @@
 
 namespace App\Services;
 
+use App\Enums\InventoryAdjustmentReason;
 use App\Enums\InventoryOutboundReason;
 use App\Models\Cabinet;
 use App\Models\InventoryItem;
@@ -21,18 +22,24 @@ class InventoryKardexService
 
     public const MANUAL_OUTBOUND = 'manual_outbound';
 
+    public const ADJUSTMENT_IN = 'adjustment_in';
+
+    public const ADJUSTMENT_OUT = 'adjustment_out';
+
     public function forWarehouse(Warehouse $warehouse, array $filters): LengthAwarePaginator
     {
         $query = $this->entryQuery($warehouse)
             ->unionAll($this->transferOutQuery($warehouse))
-            ->unionAll($this->manualOutboundQuery($warehouse));
+            ->unionAll($this->manualOutboundQuery($warehouse))
+            ->unionAll($this->adjustmentQuery($warehouse));
 
         return $this->paginate($query, $filters);
     }
 
     public function forCabinet(Warehouse $warehouse, Cabinet $cabinet, array $filters): LengthAwarePaginator
     {
-        $query = $this->transferInQuery($warehouse, $cabinet);
+        $query = $this->transferInQuery($warehouse, $cabinet)
+            ->unionAll($this->adjustmentQuery($cabinet));
 
         return $this->paginate($query, $filters);
     }
@@ -176,6 +183,40 @@ class InventoryKardexService
             ]);
     }
 
+    private function adjustmentQuery(Warehouse|Cabinet $stockable): Builder
+    {
+        return DB::table('inventory_adjustments')
+            ->join('users', 'users.id', '=', 'inventory_adjustments.adjusted_by')
+            ->join('inventory_items', 'inventory_items.id', '=', 'inventory_adjustments.inventory_item_id')
+            ->join('products', 'products.id', '=', 'inventory_items.product_id')
+            ->join('units', 'units.id', '=', 'products.unit_id')
+            ->join('inventory_batches', 'inventory_batches.id', '=', 'inventory_adjustments.inventory_batch_id')
+            ->leftJoin('inventory_batches as source_batches', 'source_batches.id', '=', 'inventory_batches.source_batch_id')
+            ->where('inventory_items.stockable_type', $stockable->getMorphClass())
+            ->where('inventory_items.stockable_id', $stockable->id)
+            ->select([
+                'inventory_adjustments.adjusted_at as occurred_at',
+                DB::raw("case when inventory_adjustments.difference > 0 then 'adjustment_in' else 'adjustment_out' end as movement_type"),
+                DB::raw("case when inventory_adjustments.difference > 0 then 'in' else 'out' end as direction"),
+                DB::raw('abs(inventory_adjustments.difference) as quantity'),
+                'inventory_adjustments.id as reference_id',
+                DB::raw('null as reference_code'),
+                'inventory_items.id as inventory_item_id',
+                'products.name as product_name',
+                'units.name as unit_name',
+                'inventory_batches.internal_lot',
+                'source_batches.internal_lot as source_internal_lot',
+                'inventory_batches.manufacturer_lot',
+                'inventory_batches.expiration_date',
+                DB::raw('null as source_name'),
+                DB::raw('null as destination_name'),
+                'users.name as actor_name',
+                'users.last_name_one as actor_last_name',
+                'inventory_adjustments.reason as detail',
+                'inventory_adjustments.id as sort_id',
+            ]);
+    }
+
     private function paginate(Builder $union, array $filters): LengthAwarePaginator
     {
         $query = DB::query()->fromSub($union, 'kardex_movements');
@@ -195,6 +236,7 @@ class InventoryKardexService
             $movement->movement_label = $this->movementLabel($movement->movement_type);
             $movement->reason_label = match ($movement->movement_type) {
                 self::MANUAL_OUTBOUND => InventoryOutboundReason::tryFrom($movement->detail ?? '')?->label(),
+                self::ADJUSTMENT_IN, self::ADJUSTMENT_OUT => InventoryAdjustmentReason::tryFrom($movement->detail ?? '')?->label(),
                 default => null,
             };
             $movement->formatted_quantity = InventoryItem::formatQuantity($movement->quantity);
@@ -212,6 +254,8 @@ class InventoryKardexService
             self::TRANSFER_IN => 'Transferencia recibida',
             self::TRANSFER_OUT => 'Transferencia enviada',
             self::MANUAL_OUTBOUND => 'Salida manual',
+            self::ADJUSTMENT_IN => 'Ajuste positivo',
+            self::ADJUSTMENT_OUT => 'Ajuste negativo',
         };
     }
 }
