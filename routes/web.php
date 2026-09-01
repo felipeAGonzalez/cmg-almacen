@@ -5,6 +5,7 @@ use App\Http\Controllers\CabinetController;
 use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\EntryController;
+use App\Http\Controllers\HospitalIntegrationController;
 use App\Http\Controllers\InventoryAdjustmentController;
 use App\Http\Controllers\InventoryKardexController;
 use App\Http\Controllers\InventoryOutboundController;
@@ -41,6 +42,10 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::put('settings/operations', [OperationalSettingController::class, 'update'])
         ->middleware('role:administrator')
         ->name('operational-settings.update');
+
+    Route::get('integrations/hospital/patients', [HospitalIntegrationController::class, 'patients'])
+        ->middleware('role:administrator')
+        ->name('hospital-integration.patients');
 
     Route::resource('categories', CategoryController::class)
         ->except('show')

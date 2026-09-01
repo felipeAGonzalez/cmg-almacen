@@ -71,6 +71,10 @@
                         <i class="bi bi-clock-history" aria-hidden="true"></i>
                         <span>Horario operativo</span>
                     </a>
+                    <a href="{{ route('hospital-integration.patients') }}" class="admin-nav-link {{ request()->routeIs('hospital-integration.*') ? 'active' : '' }}">
+                        <i class="bi bi-hospital" aria-hidden="true"></i>
+                        <span>Integración hospitalaria</span>
+                    </a>
                 @elseif (Auth::user()->role === \App\Enums\UserRole::WAREHOUSE_MANAGER)
                     @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
                     @if ($assignedWarehouses->isNotEmpty())
