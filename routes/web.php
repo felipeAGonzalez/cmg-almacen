@@ -10,6 +10,7 @@ use App\Http\Controllers\InventoryKardexController;
 use App\Http\Controllers\InventoryOutboundController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\LocationController;
+use App\Http\Controllers\OperationalSettingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
@@ -33,6 +34,13 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::resource('users', UserController::class)
         ->except('show')
         ->middleware('role:administrator');
+
+    Route::get('settings/operations', [OperationalSettingController::class, 'edit'])
+        ->middleware('role:administrator')
+        ->name('operational-settings.edit');
+    Route::put('settings/operations', [OperationalSettingController::class, 'update'])
+        ->middleware('role:administrator')
+        ->name('operational-settings.update');
 
     Route::resource('categories', CategoryController::class)
         ->except('show')

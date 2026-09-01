@@ -66,6 +66,11 @@
                         <i class="bi bi-box-seam" aria-hidden="true"></i>
                         <span>Productos</span>
                     </a>
+                    <span class="admin-nav-label mt-4">CONFIGURACIÓN</span>
+                    <a href="{{ route('operational-settings.edit') }}" class="admin-nav-link {{ request()->routeIs('operational-settings.*') ? 'active' : '' }}">
+                        <i class="bi bi-clock-history" aria-hidden="true"></i>
+                        <span>Horario operativo</span>
+                    </a>
                 @elseif (Auth::user()->role === \App\Enums\UserRole::WAREHOUSE_MANAGER)
                     @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
                     @if ($assignedWarehouses->isNotEmpty())

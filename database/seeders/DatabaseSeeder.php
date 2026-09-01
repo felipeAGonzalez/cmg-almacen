@@ -13,6 +13,7 @@ class DatabaseSeeder extends Seeder
     {
         $this->call(RootUserSeeder::class);
         $this->call(CategorySeeder::class);
+        $this->call(OperationalSettingSeeder::class);
 
         User::create([
             'name' => 'Admin',
