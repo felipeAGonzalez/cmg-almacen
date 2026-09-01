@@ -404,3 +404,49 @@ document.addEventListener('DOMContentLoaded', function () {
         if (submit) { submit.disabled = true; submit.setAttribute('aria-disabled', 'true'); }
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('[data-adjustment-form]');
+    if (!form) return;
+
+    const batches = JSON.parse(form.dataset.adjustmentBatches || '[]');
+    const byId = new Map(batches.map(function (batch) { return [String(batch.id), batch]; }));
+    const batchSelect = form.querySelector('[data-adjustment-batch]');
+    const countedInput = form.querySelector('[data-adjustment-counted]');
+    const submit = form.querySelector('[data-adjustment-submit]');
+    const formatter = new Intl.NumberFormat('es-MX', { maximumFractionDigits: 3 });
+    const formatQuantity = function (value) { return formatter.format(Number.parseFloat(value) || 0); };
+    const formatDate = function (value) {
+        if (!value) return 'Sin caducidad';
+        const parts = value.split('-');
+        return `${parts[2]}/${parts[1]}/${parts[0]}`;
+    };
+
+    function updateAdjustment() {
+        const batch = byId.get(batchSelect.value);
+        const hasCount = countedInput.value !== '' && Number.isFinite(Number.parseFloat(countedInput.value));
+        const counted = Number.parseFloat(countedInput.value);
+        const current = batch ? Number.parseFloat(batch.availableQuantity) : 0;
+        const difference = Math.round((counted - current) * 1000) / 1000;
+        const equal = Boolean(batch && hasCount && Math.abs(difference) < 0.0005);
+        const differenceElement = form.querySelector('[data-adjustment-difference]');
+
+        form.querySelector('[data-adjustment-current]').textContent = batch ? formatQuantity(batch.availableQuantity) : '—';
+        form.querySelector('[data-adjustment-manufacturer]').textContent = batch?.manufacturerLot || 'No indicado';
+        form.querySelector('[data-adjustment-expiration]').textContent = batch ? formatDate(batch.expirationDate) : '—';
+        form.querySelector('[data-adjustment-expired]').classList.toggle('d-none', !batch?.expired);
+        form.querySelector('[data-adjustment-equal]').classList.toggle('d-none', !equal);
+        differenceElement.textContent = batch && hasCount ? `${difference > 0 ? '+' : ''}${formatQuantity(difference)}` : '—';
+        differenceElement.className = `badge fs-5 ${!batch || !hasCount ? 'text-bg-secondary' : difference > 0 ? 'text-bg-success' : difference < 0 ? 'text-bg-danger' : 'text-bg-secondary'}`;
+        submit.disabled = !batch || !hasCount || counted < 0 || equal;
+    }
+
+    batchSelect.addEventListener('change', updateAdjustment);
+    countedInput.addEventListener('input', updateAdjustment);
+    updateAdjustment();
+    form.addEventListener('submit', function () {
+        if (!form.checkValidity()) return;
+        submit.disabled = true;
+        submit.setAttribute('aria-disabled', 'true');
+    });
+});

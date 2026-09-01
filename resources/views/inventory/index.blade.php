@@ -82,6 +82,7 @@
                         @foreach ($inventoryItems as $inventoryItem)
                             @php($editRoute = $isCabinet ? route('warehouses.cabinets.inventory.edit', [$warehouse, $cabinet, $inventoryItem]) : route('warehouses.inventory.edit', [$warehouse, $inventoryItem]))
                             @php($destroyRoute = $isCabinet ? route('warehouses.cabinets.inventory.destroy', [$warehouse, $cabinet, $inventoryItem]) : route('warehouses.inventory.destroy', [$warehouse, $inventoryItem]))
+                            @php($adjustmentsRoute = $isCabinet ? route('warehouses.cabinets.inventory.adjustments.index', [$warehouse, $cabinet, $inventoryItem]) : route('warehouses.inventory.adjustments.index', [$warehouse, $inventoryItem]))
                             <tr>
                                 <td>
                                     <strong class="d-block fw-semibold">{{ $inventoryItem->product->name }}</strong>
@@ -104,6 +105,7 @@
                                 <td class="text-nowrap">{{ \App\Models\InventoryItem::formatQuantity($inventoryItem->maximum_stock) }}</td>
                                 <td><span class="badge {{ $inventoryItem->stockStatusBadgeClass() }}">{{ $inventoryItem->stockStatusLabel() }}</span></td>
                                 <td class="text-end text-nowrap">
+                                    <a href="{{ $adjustmentsRoute }}" class="btn btn-sm btn-outline-secondary"><i class="bi bi-clipboard-check me-1" aria-hidden="true"></i>Ajustes</a>
                                     <a href="{{ $editRoute }}" class="btn btn-sm btn-outline-primary"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
                                     <button type="button" class="btn btn-sm btn-outline-danger ms-1" data-bs-toggle="modal" data-bs-target="#removeInventoryItemModal" data-modal-name="{{ $inventoryItem->product->name }}" data-modal-name-target="#removeInventoryItemName" data-modal-delete-url="{{ $destroyRoute }}" data-modal-form-target="#removeInventoryItemForm"><i class="bi bi-box-arrow-right me-1" aria-hidden="true"></i>Retirar del inventario</button>
                                 </td>
