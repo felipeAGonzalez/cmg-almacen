@@ -26,12 +26,17 @@ class InventoryKardexService
 
     public const ADJUSTMENT_OUT = 'adjustment_out';
 
+    public const NURSING_VOUCHER_WAREHOUSE_OUT = 'nursing_voucher_warehouse_out';
+
+    public const NURSING_VOUCHER_CABINET_OUT = 'nursing_voucher_cabinet_out';
+
     public function forWarehouse(Warehouse $warehouse, array $filters): LengthAwarePaginator
     {
         $query = $this->entryQuery($warehouse)
             ->unionAll($this->transferOutQuery($warehouse))
             ->unionAll($this->manualOutboundQuery($warehouse))
-            ->unionAll($this->adjustmentQuery($warehouse));
+            ->unionAll($this->adjustmentQuery($warehouse))
+            ->unionAll($this->nursingVoucherOutQuery($warehouse, self::NURSING_VOUCHER_WAREHOUSE_OUT));
 
         return $this->paginate($query, $filters);
     }
@@ -39,7 +44,8 @@ class InventoryKardexService
     public function forCabinet(Warehouse $warehouse, Cabinet $cabinet, array $filters): LengthAwarePaginator
     {
         $query = $this->transferInQuery($warehouse, $cabinet)
-            ->unionAll($this->adjustmentQuery($cabinet));
+            ->unionAll($this->adjustmentQuery($cabinet))
+            ->unionAll($this->nursingVoucherOutQuery($cabinet, self::NURSING_VOUCHER_CABINET_OUT));
 
         return $this->paginate($query, $filters);
     }
@@ -73,6 +79,8 @@ class InventoryKardexService
                 DB::raw('null as actor_name'),
                 DB::raw('null as actor_last_name'),
                 DB::raw('null as detail'),
+                DB::raw('null as patient_name'),
+                DB::raw('null as room_number'),
                 'inventory_batches.id as sort_id',
             ]);
     }
@@ -108,6 +116,8 @@ class InventoryKardexService
                 'users.name as actor_name',
                 'users.last_name_one as actor_last_name',
                 DB::raw('null as detail'),
+                DB::raw('null as patient_name'),
+                DB::raw('null as room_number'),
                 'inventory_transfer_allocations.id as sort_id',
             ]);
     }
@@ -145,6 +155,8 @@ class InventoryKardexService
                 'users.name as actor_name',
                 'users.last_name_one as actor_last_name',
                 DB::raw('null as detail'),
+                DB::raw('null as patient_name'),
+                DB::raw('null as room_number'),
                 'inventory_transfer_allocations.id as sort_id',
             ]);
     }
@@ -179,7 +191,56 @@ class InventoryKardexService
                 'users.name as actor_name',
                 'users.last_name_one as actor_last_name',
                 'inventory_outbounds.reason as detail',
+                DB::raw('null as patient_name'),
+                DB::raw('null as room_number'),
                 'inventory_outbound_allocations.id as sort_id',
+            ]);
+    }
+
+    private function nursingVoucherOutQuery(Warehouse|Cabinet $stockable, string $movementType): Builder
+    {
+        $sourceType = $stockable instanceof Warehouse ? 'warehouse' : 'cabinet';
+
+        return DB::table('nursing_voucher_allocations')
+            ->join('nursing_voucher_fulfillment_items', 'nursing_voucher_fulfillment_items.id', '=', 'nursing_voucher_allocations.nursing_voucher_fulfillment_item_id')
+            ->join('nursing_voucher_fulfillments', 'nursing_voucher_fulfillments.id', '=', 'nursing_voucher_fulfillment_items.nursing_voucher_fulfillment_id')
+            ->join('nursing_voucher_items', 'nursing_voucher_items.id', '=', 'nursing_voucher_fulfillment_items.nursing_voucher_item_id')
+            ->join('nursing_vouchers', 'nursing_vouchers.id', '=', 'nursing_voucher_fulfillments.nursing_voucher_id')
+            ->join('users', 'users.id', '=', 'nursing_voucher_fulfillments.supplied_by')
+            ->join('inventory_batches', 'inventory_batches.id', '=', 'nursing_voucher_allocations.inventory_batch_id')
+            ->join('inventory_items', 'inventory_items.id', '=', 'inventory_batches.inventory_item_id')
+            ->join('products', 'products.id', '=', 'inventory_items.product_id')
+            ->join('units', 'units.id', '=', 'products.unit_id')
+            ->leftJoin('inventory_batches as source_batches', 'source_batches.id', '=', 'inventory_batches.source_batch_id')
+            ->where('nursing_vouchers.source_type', $sourceType)
+            ->where('nursing_vouchers.warehouse_id', $stockable instanceof Warehouse ? $stockable->id : $stockable->warehouse_id)
+            ->where('inventory_items.stockable_type', $stockable->getMorphClass())
+            ->where('inventory_items.stockable_id', $stockable->id)
+            ->whereColumn('nursing_voucher_items.nursing_voucher_id', 'nursing_vouchers.id')
+            ->whereColumn('nursing_voucher_items.product_id', 'inventory_items.product_id')
+            ->when($stockable instanceof Cabinet, fn (Builder $query) => $query->where('nursing_vouchers.source_cabinet_id', $stockable->id))
+            ->select([
+                'nursing_voucher_fulfillments.supplied_at as occurred_at',
+                DB::raw("'".$movementType."' as movement_type"),
+                DB::raw("'out' as direction"),
+                'nursing_voucher_allocations.quantity',
+                'nursing_vouchers.id as reference_id',
+                DB::raw('null as reference_code'),
+                'inventory_items.id as inventory_item_id',
+                'products.name as product_name',
+                'units.name as unit_name',
+                'inventory_batches.internal_lot',
+                'source_batches.internal_lot as source_internal_lot',
+                'inventory_batches.manufacturer_lot',
+                'inventory_batches.expiration_date',
+                DB::raw('null as source_name'),
+                DB::raw('null as destination_name'),
+                'users.name as actor_name',
+                'users.last_name_one as actor_last_name',
+                DB::raw('null as detail'),
+                'nursing_vouchers.patient_name',
+                'nursing_vouchers.room_number',
+                'nursing_voucher_allocations.id as sort_id',
             ]);
     }
 
@@ -213,6 +274,8 @@ class InventoryKardexService
                 'users.name as actor_name',
                 'users.last_name_one as actor_last_name',
                 'inventory_adjustments.reason as detail',
+                DB::raw('null as patient_name'),
+                DB::raw('null as room_number'),
                 'inventory_adjustments.id as sort_id',
             ]);
     }
@@ -256,6 +319,8 @@ class InventoryKardexService
             self::MANUAL_OUTBOUND => 'Salida manual',
             self::ADJUSTMENT_IN => 'Ajuste positivo',
             self::ADJUSTMENT_OUT => 'Ajuste negativo',
+            self::NURSING_VOUCHER_WAREHOUSE_OUT => 'Vale de Enfermería — Salida de almacén',
+            self::NURSING_VOUCHER_CABINET_OUT => 'Vale de Enfermería — Salida de gabinete',
         };
     }
 }
