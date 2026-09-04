@@ -43,6 +43,10 @@
                 </div>
             @endif
 
+            @if (session('error'))
+                <div class="alert alert-danger" role="alert">{{ session('error') }}</div>
+            @endif
+
             <form method="POST" action="{{ route('login') }}" novalidate>
                 @csrf
 
