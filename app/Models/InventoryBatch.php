@@ -77,4 +77,9 @@ class InventoryBatch extends Model
     {
         return $this->hasMany(InventoryAdjustment::class);
     }
+
+    public function nursingVoucherAllocations(): HasMany
+    {
+        return $this->hasMany(NursingVoucherAllocation::class);
+    }
 }

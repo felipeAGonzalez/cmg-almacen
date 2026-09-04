@@ -4,6 +4,7 @@ namespace App\Providers;
 
 use App\Contracts\HospitalPatientProvider;
 use App\Models\Cabinet;
+use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\HospitalApiPatientProvider;
 use Illuminate\Database\Eloquent\Relations\Relation;
@@ -26,6 +27,7 @@ class AppServiceProvider extends ServiceProvider
     {
         Relation::enforceMorphMap([
             'warehouse' => Warehouse::class,
+            'user' => User::class,
             'cabinet' => Cabinet::class,
         ]);
     }

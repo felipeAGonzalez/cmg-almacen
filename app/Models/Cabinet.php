@@ -35,4 +35,9 @@ class Cabinet extends Model
     {
         return $this->hasMany(InventoryTransfer::class);
     }
+
+    public function nursingVouchers(): HasMany
+    {
+        return $this->hasMany(NursingVoucher::class, 'source_cabinet_id');
+    }
 }

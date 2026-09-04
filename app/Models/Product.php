@@ -55,4 +55,9 @@ class Product extends Model
     {
         return $this->hasMany(InventoryItem::class);
     }
+
+    public function nursingVoucherItems(): HasMany
+    {
+        return $this->hasMany(NursingVoucherItem::class);
+    }
 }
