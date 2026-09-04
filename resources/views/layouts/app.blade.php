@@ -35,11 +35,21 @@
             </a>
 
             <nav class="admin-nav flex-grow-1" aria-label="Navegación principal">
+                @php($unreadNotificationCount = $unreadNotificationCount ?? Auth::user()->unreadNotifications()->count())
                 <span class="admin-nav-label">MENÚ PRINCIPAL</span>
                 <a href="{{ route('home') }}" class="admin-nav-link {{ request()->routeIs('home') ? 'active' : '' }}">
                     <i class="bi bi-house-door" aria-hidden="true"></i>
                     <span>Inicio</span>
                 </a>
+                @if (in_array(Auth::user()->role, [\App\Enums\UserRole::NURSE, \App\Enums\UserRole::WAREHOUSE_MANAGER, \App\Enums\UserRole::ADMINISTRATOR, \App\Enums\UserRole::ROOT], true))
+                    <a href="{{ route('notifications.index') }}" class="admin-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
+                        <i class="bi bi-bell" aria-hidden="true"></i>
+                        <span>Notificaciones</span>
+                        @if ($unreadNotificationCount > 0)
+                            <span class="badge rounded-pill text-bg-danger ms-auto">{{ $unreadNotificationCount }}</span>
+                        @endif
+                    </a>
+                @endif
                 @if (Auth::user()->isAdmin())
                     <a href="{{ route('users.index') }}" class="admin-nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                         <i class="bi bi-people" aria-hidden="true"></i>
@@ -116,6 +126,19 @@
                         @endforeach
                     @endif
                 @endif
+                @can('viewAny', \App\Models\AdministrationVoucher::class)
+                    <a href="{{ route('administration-vouchers.index') }}" class="admin-nav-link {{ request()->routeIs('administration-vouchers.*') ? 'active' : '' }}">
+                        <i class="bi bi-clipboard-check" aria-hidden="true"></i>
+                        <span>Vales de Administración</span>
+                    </a>
+                @endcan
+                @can("viewAny", \App\Models\NursingVoucher::class)
+                    <span class="admin-nav-label mt-4">ENFERMERÍA</span>
+                    <a href="{{ route("nursing-vouchers.index") }}" class="admin-nav-link {{ request()->routeIs("nursing-vouchers.*") ? "active" : "" }}">
+                        <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
+                        <span>Vales de Enfermería</span>
+                    </a>
+                @endcan
             </nav>
 
             <div class="admin-sidebar-footer">
