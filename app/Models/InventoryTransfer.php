@@ -11,11 +11,16 @@ class InventoryTransfer extends Model
 {
     use HasFactory;
 
-    protected $fillable = ['cabinet_id', 'transferred_by', 'transferred_at', 'notes'];
+    protected $fillable = ['administration_voucher_id', 'cabinet_id', 'transferred_by', 'transferred_at', 'notes'];
 
     protected function casts(): array
     {
         return ['transferred_at' => 'datetime'];
+    }
+
+    public function administrationVoucher(): BelongsTo
+    {
+        return $this->belongsTo(AdministrationVoucher::class);
     }
 
     public function warehouse(): BelongsTo

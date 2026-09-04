@@ -16,6 +16,7 @@
         <div class="col-sm-6 col-lg-3"><span class="entry-detail-label">Gabinete destino</span><strong class="d-block">{{ $transfer->cabinet->name }}</strong></div>
         <div class="col-sm-6 col-lg-3"><span class="entry-detail-label">Fecha y hora</span><strong class="d-block">{{ $transfer->transferred_at->format('d/m/Y H:i') }}</strong></div>
         <div class="col-sm-6 col-lg-3"><span class="entry-detail-label">Realizó</span><strong class="d-block">{{ $transfer->transferredBy->name }} {{ $transfer->transferredBy->last_name_one }}</strong></div>
+        @if($transfer->administrationVoucher && Auth::user()->can('view', $transfer->administrationVoucher))<div class="col-12 alert alert-info mb-0">Originado por <a href="{{ route('administration-vouchers.show', $transfer->administrationVoucher) }}">Vale de Administración #{{ $transfer->administrationVoucher->id }}</a></div>@endif
         <div class="col-12"><span class="entry-detail-label">Notas</span><p class="mb-0">{{ $transfer->notes ?: 'Sin notas' }}</p></div>
     </div></div></section>
 

@@ -450,3 +450,84 @@ document.addEventListener('DOMContentLoaded', function () {
         submit.setAttribute('aria-disabled', 'true');
     });
 });
+
+document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('[data-nursing-voucher-form]');
+    const section = document.querySelector('[data-nursing-voucher-items]');
+
+    if (form && section) {
+        const list = section.querySelector('[data-voucher-items-list]');
+        const template = document.querySelector('[data-nursing-voucher-item-template]');
+        const addButton = section.querySelector('[data-add-voucher-item]');
+        const products = JSON.parse(section.dataset.productOptions || '[]');
+        const byId = new Map(products.map(function (product) { return [String(product.id), product]; }));
+
+        function selectedIds(exceptRow) {
+            return new Set(Array.from(list.querySelectorAll('[data-voucher-item]'))
+                .filter(function (row) { return row !== exceptRow; })
+                .map(function (row) { return row.querySelector('[data-voucher-product]').value; })
+                .filter(Boolean));
+        }
+
+        function updateRow(row) {
+            const select = row.querySelector('[data-voucher-product]');
+            const product = byId.get(select.value);
+            const unavailable = selectedIds(row);
+            Array.from(select.options).forEach(function (option) {
+                if (option.value) option.disabled = unavailable.has(option.value);
+            });
+            row.querySelector('[data-voucher-unit]').textContent = product?.unit || 'Unidad';
+            row.querySelector('[data-voucher-product-detail]').textContent = product
+                ? [product.code, product.barcode].filter(Boolean).join(' · ') || 'Sin código adicional'
+                : 'Selecciona por nombre, código o código de barras.';
+        }
+
+        function updateAll() {
+            list.querySelectorAll('[data-voucher-item]').forEach(updateRow);
+        }
+
+        function reindex() {
+            const rows = list.querySelectorAll('[data-voucher-item]');
+            rows.forEach(function (row, index) {
+                row.querySelector('[data-voucher-item-number]').textContent = index + 1;
+                row.querySelectorAll('[name]').forEach(function (field) {
+                    field.name = field.name.replace(/items\[[^\]]+\]/, `items[${index}]`);
+                });
+                row.querySelector('[data-remove-voucher-item]').disabled = rows.length === 1;
+            });
+        }
+
+        function initialize(row) {
+            row.querySelector('[data-voucher-product]').addEventListener('change', updateAll);
+            row.querySelector('[data-remove-voucher-item]').addEventListener('click', function () {
+                if (list.querySelectorAll('[data-voucher-item]').length === 1) return;
+                row.remove();
+                reindex();
+                updateAll();
+            });
+        }
+
+        list.querySelectorAll('[data-voucher-item]').forEach(initialize);
+        reindex();
+        updateAll();
+        addButton.addEventListener('click', function () {
+            const wrapper = document.createElement('div');
+            wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', list.children.length).trim();
+            const row = wrapper.firstElementChild;
+            list.appendChild(row);
+            initialize(row);
+            reindex();
+            updateAll();
+            row.querySelector('[data-voucher-product]').focus();
+        });
+    }
+
+    document.querySelectorAll('[data-disable-submit-form]').forEach(function (targetForm) {
+        targetForm.addEventListener('submit', function () {
+            targetForm.querySelectorAll('[data-submit-button]').forEach(function (button) {
+                button.disabled = true;
+                button.setAttribute('aria-disabled', 'true');
+            });
+        });
+    });
+});
