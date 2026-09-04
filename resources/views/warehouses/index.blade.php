@@ -35,6 +35,7 @@
                         <tr>
                             <th scope="col">Nombre</th>
                             <th scope="col">Usuarios asignados</th>
+                            <th scope="col">Gabinete de Enfermería</th>
                             <th scope="col" class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -52,6 +53,7 @@
                                         {{ $warehouse->users_count }} {{ $warehouse->users_count === 1 ? 'usuario' : 'usuarios' }}
                                     </span>
                                 </td>
+                                <td>{{ $warehouse->defaultNursingCabinet?->name ?? 'Sin configurar' }}</td>
                                 <td class="text-end text-nowrap">
                                     @if (Auth::user()->canManageSuppliersIn($warehouse))
                                         <a href="{{ route('warehouses.suppliers.index', $warehouse) }}" class="btn btn-sm btn-outline-secondary" aria-label="Ver proveedores de {{ $warehouse->name }}">

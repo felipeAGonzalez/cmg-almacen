@@ -25,6 +25,28 @@
         @error('name')
             <div class="invalid-feedback">{{ $message }}</div>
         @enderror
+
+        @if ($isEditing)
+            <div class="mt-4">
+                <label for="default_nursing_cabinet_id" class="form-label">Gabinete predeterminado de Enfermería</label>
+                <select
+                    id="default_nursing_cabinet_id"
+                    name="default_nursing_cabinet_id"
+                    class="form-select @error('default_nursing_cabinet_id') is-invalid @enderror"
+                >
+                    <option value="">Sin configurar</option>
+                    @foreach ($cabinets as $cabinet)
+                        <option value="{{ $cabinet->id }}" @selected((int) old('default_nursing_cabinet_id', $warehouse->default_nursing_cabinet_id) === $cabinet->id)>
+                            {{ $cabinet->name }}
+                        </option>
+                    @endforeach
+                </select>
+                <div class="form-text">Se utilizará automáticamente cuando el almacén esté fuera de horario o en su día de descanso.</div>
+                @error('default_nursing_cabinet_id')
+                    <div class="invalid-feedback">{{ $message }}</div>
+                @enderror
+            </div>
+        @endif
     </div>
 
     <div class="form-actions">

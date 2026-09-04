@@ -13,6 +13,7 @@ class WarehouseController extends Controller
     public function index(): View
     {
         $warehouses = Warehouse::query()
+            ->with('defaultNursingCabinet')
             ->withCount('users')
             ->orderBy('name')
             ->paginate(15);
@@ -36,7 +37,10 @@ class WarehouseController extends Controller
 
     public function edit(Warehouse $warehouse): View
     {
-        return view('warehouses.edit', compact('warehouse'));
+        return view('warehouses.edit', [
+            'warehouse' => $warehouse,
+            'cabinets' => $warehouse->cabinets()->orderBy('name')->get(),
+        ]);
     }
 
     public function update(UpdateWarehouseRequest $request, Warehouse $warehouse): RedirectResponse

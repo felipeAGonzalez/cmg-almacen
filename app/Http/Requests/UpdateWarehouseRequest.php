@@ -25,6 +25,13 @@ class UpdateWarehouseRequest extends FormRequest
                 'max:255',
                 Rule::unique('warehouses', 'name')->ignore($this->route('warehouse')),
             ],
+            'default_nursing_cabinet_id' => [
+                'nullable',
+                'integer',
+                Rule::exists('cabinets', 'id')->where(
+                    fn ($query) => $query->where('warehouse_id', $this->route('warehouse')->getKey()),
+                ),
+            ],
         ];
     }
 
@@ -38,6 +45,7 @@ class UpdateWarehouseRequest extends FormRequest
             'name.string' => 'El nombre debe ser texto.',
             'name.max' => 'El nombre no puede tener más de 255 caracteres.',
             'name.unique' => 'Ya existe un almacén con este nombre.',
+            'default_nursing_cabinet_id.exists' => 'El gabinete predeterminado debe pertenecer al almacén seleccionado.',
         ];
     }
 
@@ -48,6 +56,7 @@ class UpdateWarehouseRequest extends FormRequest
     {
         return [
             'name' => 'nombre',
+            'default_nursing_cabinet_id' => 'gabinete predeterminado de Enfermería',
         ];
     }
 
@@ -55,6 +64,9 @@ class UpdateWarehouseRequest extends FormRequest
     {
         $this->merge([
             'name' => trim((string) $this->input('name')),
+            'default_nursing_cabinet_id' => filled($this->input('default_nursing_cabinet_id'))
+                ? $this->integer('default_nursing_cabinet_id')
+                : null,
         ]);
     }
 }
