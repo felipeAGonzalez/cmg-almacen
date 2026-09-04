@@ -67,7 +67,7 @@
                 <div id="warehouseSelection">
                     <fieldset>
                         <legend class="form-label fs-6 mb-1">Almacenes asignados <span class="text-danger" aria-hidden="true">*</span></legend>
-                        <p class="small text-body-secondary mb-2">Selecciona uno o varios almacenes.</p>
+                        <p id="warehouseSelectionHelp" class="small text-body-secondary mb-2">Selecciona uno o varios almacenes.</p>
 
                         @if ($warehouses->isEmpty())
                             <div class="alert alert-warning mb-0">No hay almacenes disponibles para asignar.</div>
@@ -97,6 +97,13 @@
                         @endforeach
                     </fieldset>
                 </div>
+            </div>
+
+            <div class="col-12" id="hospitalUserLink" hidden>
+                <label for="hospital_user_id" class="form-label">ID de usuario en Hospitalización</label>
+                <input type="text" id="hospital_user_id" name="hospital_user_id" value="{{ old('hospital_user_id', $user->hospital_user_id ?? '') }}" class="form-control @error('hospital_user_id') is-invalid @enderror" maxlength="255" autocomplete="off">
+                <div class="form-text">Identificador utilizado para vincular esta cuenta con el sistema de Hospitalización.</div>
+                @error('hospital_user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
         </div>
     </div>
@@ -138,6 +145,21 @@
             const warehouseSelection = document.getElementById('warehouseSelection');
             const administratorNotice = document.getElementById('administratorAccessNotice');
             const warehouseInputs = warehouseSelection.querySelectorAll('input[type="checkbox"]');
+            const hospitalUserLink = document.getElementById('hospitalUserLink');
+            const hospitalUserInput = document.getElementById('hospital_user_id');
+            const warehouseSelectionHelp = document.getElementById('warehouseSelectionHelp');
+
+            function enforceNurseWarehouseLimit(changedInput) {
+                if (roleSelect.value !== 'nurse' || !changedInput.checked) {
+                    return;
+                }
+
+                warehouseInputs.forEach(function (input) {
+                    if (input !== changedInput) {
+                        input.checked = false;
+                    }
+                });
+            }
 
             function updateWarehouseSelection() {
                 const isAdministrator = roleSelect.value === 'administrator';
@@ -146,9 +168,20 @@
                 warehouseInputs.forEach(function (input) {
                     input.disabled = isAdministrator;
                 });
+                const isNurse = roleSelect.value === 'nurse';
+                warehouseSelectionHelp.textContent = isNurse
+                    ? 'Selecciona como máximo un almacén.'
+                    : 'Selecciona uno o varios almacenes.';
+                hospitalUserLink.hidden = !isNurse;
+                hospitalUserInput.disabled = !isNurse;
             }
 
             roleSelect.addEventListener('change', updateWarehouseSelection);
+            warehouseInputs.forEach(function (input) {
+                input.addEventListener('change', function () {
+                    enforceNurseWarehouseLimit(input);
+                });
+            });
             updateWarehouseSelection();
         });
     </script>

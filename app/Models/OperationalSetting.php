@@ -12,7 +12,15 @@ class OperationalSetting extends Model
     protected $fillable = [
         'warehouse_service_start_time',
         'warehouse_service_end_time',
+        'warehouse_rest_day',
     ];
+
+    protected function casts(): array
+    {
+        return [
+            'warehouse_rest_day' => 'integer',
+        ];
+    }
 
     protected function warehouseServiceStartTime(): Attribute
     {
@@ -31,6 +39,7 @@ class OperationalSetting extends Model
             [
                 'warehouse_service_start_time' => '09:00:00',
                 'warehouse_service_end_time' => '17:00:00',
+                'warehouse_rest_day' => 7,
             ],
         );
     }

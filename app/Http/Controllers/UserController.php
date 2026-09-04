@@ -39,6 +39,9 @@ class UserController extends Controller
         $validated = $request->validated();
         $warehouseIds = $validated['warehouse_ids'] ?? [];
         unset($validated['warehouse_ids']);
+        $validated['hospital_user_id'] = $validated['role'] === UserRole::NURSE->value
+            ? ($validated['hospital_user_id'] ?? null)
+            : null;
 
         DB::transaction(function () use ($validated, $warehouseIds): void {
             $user = User::create($validated);
@@ -71,6 +74,9 @@ class UserController extends Controller
         $validated = $request->validated();
         $warehouseIds = $validated['warehouse_ids'] ?? [];
         unset($validated['warehouse_ids']);
+        $validated['hospital_user_id'] = $validated['role'] === UserRole::NURSE->value
+            ? ($validated['hospital_user_id'] ?? null)
+            : null;
 
         if (! $request->filled('password')) {
             unset($validated['password']);

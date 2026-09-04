@@ -30,6 +30,10 @@ class OperationalScheduleService
     public function isWarehouseServiceOpen(CarbonInterface $dateTime): bool
     {
         $localDateTime = $dateTime->copy()->setTimezone(config('app.timezone'));
+
+        if ($localDateTime->dayOfWeekIso === $this->setting()->warehouse_rest_day) {
+            return false;
+        }
         $current = $this->timeInSeconds($localDateTime->format('H:i:s'));
         $start = $this->timeInSeconds($this->startTime());
         $end = $this->timeInSeconds($this->endTime());
@@ -39,6 +43,11 @@ class OperationalScheduleService
         }
 
         return $current >= $start || $current < $end;
+    }
+
+    public function isWarehouseAvailableAt(CarbonInterface $dateTime): bool
+    {
+        return $this->isWarehouseServiceOpen($dateTime);
     }
 
     private function timeInSeconds(string $time): int

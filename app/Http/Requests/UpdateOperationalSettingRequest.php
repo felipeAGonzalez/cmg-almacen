@@ -18,6 +18,7 @@ class UpdateOperationalSettingRequest extends FormRequest
         return [
             'warehouse_service_start_time' => ['required', 'date_format:H:i', 'different:warehouse_service_end_time'],
             'warehouse_service_end_time' => ['required', 'date_format:H:i'],
+            'warehouse_rest_day' => ['required', 'integer', 'between:1,7'],
         ];
     }
 
@@ -30,6 +31,9 @@ class UpdateOperationalSettingRequest extends FormRequest
             'warehouse_service_start_time.different' => 'La hora de inicio y la hora de fin deben ser diferentes.',
             'warehouse_service_end_time.required' => 'La hora de fin es obligatoria.',
             'warehouse_service_end_time.date_format' => 'La hora de fin debe tener un formato válido.',
+            'warehouse_rest_day.required' => 'El día de descanso es obligatorio.',
+            'warehouse_rest_day.integer' => 'El día de descanso seleccionado no es válido.',
+            'warehouse_rest_day.between' => 'El día de descanso seleccionado no es válido.',
         ];
     }
 
@@ -39,6 +43,7 @@ class UpdateOperationalSettingRequest extends FormRequest
         return [
             'warehouse_service_start_time' => 'inicio de atención en almacén',
             'warehouse_service_end_time' => 'fin de atención en almacén',
+            'warehouse_rest_day' => 'día de descanso del almacenista',
         ];
     }
 }

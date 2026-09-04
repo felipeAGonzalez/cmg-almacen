@@ -9,6 +9,7 @@ use Illuminate\Database\Eloquent\Relations\BelongsToMany;
 use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
+use LogicException;
 
 class User extends Authenticatable
 {
@@ -22,6 +23,7 @@ class User extends Authenticatable
         'email',
         'password',
         'role',
+        'hospital_user_id',
     ];
 
     protected $hidden = [
@@ -66,6 +68,17 @@ class User extends Authenticatable
         return $this->belongsToMany(Warehouse::class);
     }
 
+    public function warehouseForNursing(): ?Warehouse
+    {
+        $warehouses = $this->warehouses()->limit(2)->get();
+
+        if ($warehouses->count() > 1) {
+            throw new LogicException('A nurse cannot be assigned to more than one warehouse.');
+        }
+
+        return $warehouses->first();
+    }
+
     public function inventoryTransfers(): HasMany
     {
         return $this->hasMany(InventoryTransfer::class, 'transferred_by');
@@ -79,5 +92,15 @@ class User extends Authenticatable
     public function inventoryAdjustments(): HasMany
     {
         return $this->hasMany(InventoryAdjustment::class, 'adjusted_by');
+    }
+
+    public function requestedNursingVouchers(): HasMany
+    {
+        return $this->hasMany(NursingVoucher::class, 'requested_by');
+    }
+
+    public function nursingVoucherFulfillments(): HasMany
+    {
+        return $this->hasMany(NursingVoucherFulfillment::class, 'supplied_by');
     }
 }

@@ -105,20 +105,18 @@ class UserManagementTest extends TestCase
         $this->assertCount(2, User::where('email', 'new.user@example.com')->firstOrFail()->warehouses);
     }
 
-    public function test_an_administrator_can_create_a_nurse_with_multiple_warehouses(): void
+    public function test_an_administrator_cannot_create_a_nurse_with_multiple_warehouses(): void
     {
         $warehouses = Warehouse::factory()->count(2)->create();
 
-        $this->storeUser(UserRole::NURSE, $warehouses->modelKeys())->assertSessionHasNoErrors();
-
-        $this->assertCount(2, User::where('email', 'new.user@example.com')->firstOrFail()->warehouses);
+        $this->storeUser(UserRole::NURSE, $warehouses->modelKeys())
+            ->assertSessionHasErrors(['warehouse_ids' => 'Una enfermera sólo puede estar asignada a un almacén.']);
     }
 
-    public function test_warehouse_manager_and_nurse_require_at_least_one_warehouse(): void
+    public function test_warehouse_manager_requires_a_warehouse_but_nurse_does_not(): void
     {
-        foreach ([UserRole::WAREHOUSE_MANAGER, UserRole::NURSE] as $role) {
-            $this->storeUser($role)->assertSessionHasErrors('warehouse_ids');
-        }
+        $this->storeUser(UserRole::WAREHOUSE_MANAGER)->assertSessionHasErrors('warehouse_ids');
+        $this->storeUser(UserRole::NURSE)->assertSessionHasNoErrors();
     }
 
     public function test_warehouses_sent_for_an_administrator_are_ignored(): void
@@ -214,18 +212,15 @@ class UserManagementTest extends TestCase
         $this->assertCount(0, $user->fresh()->warehouses);
     }
 
-    public function test_changing_an_administrator_to_a_warehouse_bound_role_requires_a_warehouse(): void
+    public function test_changing_an_administrator_to_warehouse_manager_requires_a_warehouse(): void
     {
         $actor = User::factory()->administrator()->create();
+        $target = User::factory()->administrator()->create();
 
-        foreach ([UserRole::WAREHOUSE_MANAGER, UserRole::NURSE] as $role) {
-            $target = User::factory()->administrator()->create();
-
-            $this->actingAs($actor)->put(route('users.update', $target), $this->updatePayload([
-                'email' => $target->email,
-                'role' => $role->value,
-            ]))->assertSessionHasErrors('warehouse_ids');
-        }
+        $this->actingAs($actor)->put(route('users.update', $target), $this->updatePayload([
+            'email' => $target->email,
+            'role' => UserRole::WAREHOUSE_MANAGER->value,
+        ]))->assertSessionHasErrors('warehouse_ids');
     }
 
     public function test_a_legacy_user_can_be_converted_to_a_valid_role(): void
