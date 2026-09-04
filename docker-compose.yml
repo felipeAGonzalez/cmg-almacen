@@ -31,6 +31,7 @@ services:
     image: felipe89/almacen:latest
     networks:
       net_almacen:
+      cmg_hospital_integration:
     depends_on:
       db:
         condition: service_healthy
@@ -52,3 +53,6 @@ volumes:
 
 networks:
   net_almacen:
+  cmg_hospital_integration:
+    external: true
+    name: cmg_hospital_integration
