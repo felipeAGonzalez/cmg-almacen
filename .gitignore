@@ -3,3 +3,4 @@
 .env
 /public/storage
 /storage/*.key
+.phpunit.result.cache

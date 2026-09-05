@@ -24,7 +24,7 @@ class LoginRequest extends FormRequest
     public function rules(): array
     {
         return [
-            'email'    => ['required', 'string', 'email'],
+            'email' => ['required', 'string', 'email'],
             // Min 8 chars at login to fail fast; full strength rules apply on creation.
             'password' => ['required', 'string', Password::min(8)],
         ];
