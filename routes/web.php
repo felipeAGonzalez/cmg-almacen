@@ -8,6 +8,7 @@ use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EntryController;
+use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HospitalDelegatedAuthController;
 use App\Http\Controllers\HospitalIntegrationController;
 use App\Http\Controllers\InventoryAdjustmentController;
@@ -27,6 +28,8 @@ use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\WarehouseInventoryController;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Route;
+
+Route::get('/health', HealthController::class)->name('health');
 
 Route::get('/', function () {
     return Auth::check()
