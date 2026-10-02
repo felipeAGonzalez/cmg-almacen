@@ -17,8 +17,8 @@ class InventoryKardexRequest extends FormRequest
     {
         $stockable = $this->route('cabinet') instanceof Cabinet ? $this->route('cabinet') : $this->route('warehouse');
         $movementTypes = $stockable instanceof Cabinet
-            ? ['transfer_in', 'adjustment_in', 'adjustment_out', 'nursing_voucher_cabinet_out']
-            : ['entry', 'transfer_out', 'manual_outbound', 'adjustment_in', 'adjustment_out', 'nursing_voucher_warehouse_out'];
+            ? ['transfer_in', 'adjustment_in', 'adjustment_out', 'nursing_voucher_cabinet_out', 'nursing_voucher_cabinet_return']
+            : ['entry', 'transfer_out', 'manual_outbound', 'adjustment_in', 'adjustment_out', 'nursing_voucher_warehouse_out', 'nursing_voucher_warehouse_return'];
 
         return [
             'inventory_item_id' => [

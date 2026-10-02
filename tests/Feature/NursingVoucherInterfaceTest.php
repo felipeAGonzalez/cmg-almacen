@@ -35,9 +35,30 @@ class NursingVoucherInterfaceTest extends TestCase
         }
     }
 
+    public function test_only_nurse_sees_configured_link_back_to_hospitalization(): void
+    {
+        config(['hospital.web_url' => 'https://hospital.example.test']);
+
+        $nurse = User::factory()->create(['role' => UserRole::NURSE]);
+        $this->actingAs($nurse)->get(route('home'))
+            ->assertOk()
+            ->assertSee('Regresar a Hospitalización')
+            ->assertSee('href="https://hospital.example.test"', false);
+
+        foreach ([UserRole::WAREHOUSE_MANAGER, UserRole::ADMINISTRATOR, UserRole::ROOT] as $role) {
+            $user = User::factory()->create(['role' => $role]);
+            $this->actingAs($user)->get(route('home'))
+                ->assertOk()
+                ->assertDontSee('Regresar a Hospitalización');
+        }
+    }
+
     public function test_hospital_context_links_to_creation_for_nurse(): void
     {
-        $nurse = User::factory()->create(['role' => UserRole::NURSE]);
+        Carbon::setTestNow('2026-09-07 10:00:00');
+        [$nurse] = $this->nurseContext();
+        $this->fakeHospital();
+
         $this->actingAs($nurse)->withSession(['hospital_context' => $this->hospitalContext()])
             ->get(route('nursing.hospital-context'))
             ->assertOk()->assertSee('Crear vale de Enfermería')
@@ -153,8 +174,32 @@ class NursingVoucherInterfaceTest extends TestCase
         $this->actingAs($manager)->get(route('nursing-vouchers.show', $voucher))
             ->assertOk()->assertSee('Parcialmente surtido')->assertSee('Disponible: 6')
             ->assertSee('Cantidad a surtir')->assertSee('Historial de surtidos')
+            ->assertSee('Surtir completo Paracetamol')->assertSee('data-full-quantity="6.000"', false)
             ->assertSee($batch->internal_lot)->assertSee('LOT-FAB-1')
             ->assertSee('Entrega parcial')->assertDontSee('unit_cost')->assertDontSee('Cancelar vale')->assertDontSee('Rechazar vale');
+    }
+
+    public function test_full_supply_button_is_disabled_when_usable_stock_does_not_cover_pending_quantity(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $manager = User::factory()->create(['role' => UserRole::WAREHOUSE_MANAGER]);
+        $manager->warehouses()->attach($warehouse);
+        $product = Product::factory()->create(['name' => 'Insumo con existencia parcial']);
+        $inventoryItem = InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create();
+        $this->batch($inventoryItem, '4');
+        $voucher = $this->voucher(User::factory()->create(), $warehouse, NursingVoucherStatus::PENDING);
+        $voucher->items()->create([
+            'product_id' => $product->id,
+            'requested_quantity' => '10',
+            'supplied_quantity' => '0',
+        ]);
+
+        $this->actingAs($manager)->get(route('nursing-vouchers.show', $voucher))
+            ->assertOk()
+            ->assertSee('Disponible: 4')
+            ->assertSee('Captura la cantidad que surtirás parcialmente.')
+            ->assertSee('aria-label="Surtir completo Insumo con existencia parcial"', false)
+            ->assertSee('disabled', false);
     }
 
     public function test_final_vouchers_are_read_only_and_access_is_scoped(): void

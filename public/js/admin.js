@@ -617,6 +617,40 @@ document.addEventListener('DOMContentLoaded', function () {
 });
 
 document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-fill-returnable]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const input = button.closest('[data-returnable-item]')?.querySelector('[data-return-quantity]');
+            if (!input) return;
+            input.value = button.dataset.returnableQuantity;
+            input.dispatchEvent(new Event('input', { bubbles: true }));
+            input.focus();
+        });
+    });
+
+    document.querySelectorAll('[data-fill-all-returnable]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            const section = button.closest('[data-nursing-return-form]');
+            section?.querySelectorAll('[data-fill-returnable]').forEach(function (itemButton) {
+                itemButton.click();
+            });
+        });
+    });
+
+    document.querySelectorAll('[data-fill-full-quantity]').forEach(function (button) {
+        button.addEventListener('click', function () {
+            if (button.disabled) return;
+
+            const row = button.closest('[data-fulfillment-item]');
+            const quantityInput = row?.querySelector('[data-fulfillment-quantity]');
+            if (!quantityInput) return;
+
+            quantityInput.value = button.dataset.fullQuantity;
+            quantityInput.dispatchEvent(new Event('input', { bubbles: true }));
+            quantityInput.dispatchEvent(new Event('change', { bubbles: true }));
+            quantityInput.focus();
+        });
+    });
+
     const form = document.querySelector('[data-nursing-voucher-form]');
     const section = document.querySelector('[data-nursing-voucher-items]');
 

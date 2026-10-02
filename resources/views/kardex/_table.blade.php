@@ -11,7 +11,7 @@
             @foreach($movements as $movement)
                 @php
                     $badgeClass = match($movement->movement_type) {
-                        'entry', 'transfer_in', 'adjustment_in' => 'text-bg-success',
+                        'entry', 'transfer_in', 'adjustment_in', 'nursing_voucher_warehouse_return', 'nursing_voucher_cabinet_return' => 'text-bg-success',
                         'transfer_out' => 'text-bg-primary',
                         'nursing_voucher_warehouse_out', 'nursing_voucher_cabinet_out' => 'text-bg-danger',
                         'adjustment_out' => 'text-bg-danger',
@@ -25,6 +25,8 @@
                         'adjustment_in', 'adjustment_out' => $movement->reason_label ?: 'Ajuste de inventario',
                         'nursing_voucher_warehouse_out' => 'Vale de Enfermería — Almacén · Paciente: '.$movement->patient_name.' · Habitación '.$movement->room_number,
                         'nursing_voucher_cabinet_out' => 'Vale de Enfermería — Gabinete · Paciente: '.$movement->patient_name.' · Habitación '.$movement->room_number,
+                        'nursing_voucher_warehouse_return' => 'Devolución de Enfermería — Almacén · Paciente: '.$movement->patient_name.' · Habitación '.$movement->room_number,
+                        'nursing_voucher_cabinet_return' => 'Devolución de Enfermería — Gabinete · Paciente: '.$movement->patient_name.' · Habitación '.$movement->room_number,
                     };
                     $referenceUrl = match($movement->movement_type) {
                         'entry' => route('warehouses.entries.show', [$warehouse, $movement->reference_id]),
@@ -33,14 +35,14 @@
                         'adjustment_in', 'adjustment_out' => $currentCabinet
                             ? route('warehouses.cabinets.inventory.adjustments.show', [$warehouse, $currentCabinet, $movement->inventory_item_id, $movement->reference_id])
                             : route('warehouses.inventory.adjustments.show', [$warehouse, $movement->inventory_item_id, $movement->reference_id]),
-                        'nursing_voucher_warehouse_out', 'nursing_voucher_cabinet_out' => route('nursing-vouchers.show', $movement->reference_id),
+                        'nursing_voucher_warehouse_out', 'nursing_voucher_cabinet_out', 'nursing_voucher_warehouse_return', 'nursing_voucher_cabinet_return' => route('nursing-vouchers.show', $movement->reference_id),
                     };
                     $referenceLabel = match($movement->movement_type) {
                         'entry' => 'Ver entrada'.($movement->reference_code ? ' · '.$movement->reference_code : ''),
                         'transfer_in', 'transfer_out' => 'Ver transferencia',
                         'manual_outbound' => 'Ver salida',
                         'adjustment_in', 'adjustment_out' => 'Ver ajuste',
-                        'nursing_voucher_warehouse_out', 'nursing_voucher_cabinet_out' => 'Vale de Enfermería #'.$movement->reference_id,
+                        'nursing_voucher_warehouse_out', 'nursing_voucher_cabinet_out', 'nursing_voucher_warehouse_return', 'nursing_voucher_cabinet_return' => 'Vale de Enfermería #'.$movement->reference_id,
                     };
                 @endphp
                 <tr>

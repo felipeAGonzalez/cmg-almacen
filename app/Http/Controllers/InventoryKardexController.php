@@ -30,6 +30,7 @@ class InventoryKardexController extends Controller
                 InventoryKardexService::ADJUSTMENT_IN => 'Ajuste positivo',
                 InventoryKardexService::ADJUSTMENT_OUT => 'Ajuste negativo',
                 InventoryKardexService::NURSING_VOUCHER_WAREHOUSE_OUT => 'Vale de Enfermería — Salida de almacén',
+                InventoryKardexService::NURSING_VOUCHER_WAREHOUSE_RETURN => 'Devolución de Enfermería — Entrada a almacén',
             ],
         ]);
     }
@@ -49,6 +50,7 @@ class InventoryKardexController extends Controller
                 InventoryKardexService::ADJUSTMENT_IN => 'Ajuste positivo',
                 InventoryKardexService::ADJUSTMENT_OUT => 'Ajuste negativo',
                 InventoryKardexService::NURSING_VOUCHER_CABINET_OUT => 'Vale de Enfermería — Salida de gabinete',
+                InventoryKardexService::NURSING_VOUCHER_CABINET_RETURN => 'Devolución de Enfermería — Entrada a gabinete',
             ],
         ]);
     }

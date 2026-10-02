@@ -20,6 +20,7 @@ use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NotificationController;
 use App\Http\Controllers\NursingVoucherController;
 use App\Http\Controllers\NursingVoucherFulfillmentController;
+use App\Http\Controllers\NursingVoucherReturnController;
 use App\Http\Controllers\OperationalSettingController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
@@ -56,6 +57,10 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::post('nursing/vouchers', [NursingVoucherController::class, 'store'])->name('nursing-vouchers.store');
     Route::get('nursing/vouchers/{nursingVoucher}', [NursingVoucherController::class, 'show'])->name('nursing-vouchers.show');
     Route::post('nursing/vouchers/{nursingVoucher}/fulfillments', [NursingVoucherFulfillmentController::class, 'store'])->name('nursing-vouchers.fulfillments.store');
+    Route::post('nursing/vouchers/{nursingVoucher}/returns', [NursingVoucherReturnController::class, 'store'])->name('nursing-vouchers.returns.store');
+    Route::post('nursing/vouchers/{nursingVoucher}/returns/{nursingVoucherReturn}/receive', [NursingVoucherReturnController::class, 'receive'])->name('nursing-vouchers.returns.receive');
+    Route::post('nursing/vouchers/{nursingVoucher}/returns/{nursingVoucherReturn}/reject', [NursingVoucherReturnController::class, 'reject'])->name('nursing-vouchers.returns.reject');
+    Route::post('nursing/vouchers/{nursingVoucher}/returns/{nursingVoucherReturn}/cancel', [NursingVoucherReturnController::class, 'cancel'])->name('nursing-vouchers.returns.cancel');
     Route::get('administration/vouchers', [AdministrationVoucherController::class, 'index'])->name('administration-vouchers.index');
     Route::get('administration/vouchers/create', [AdministrationVoucherController::class, 'create'])->name('administration-vouchers.create');
     Route::post('administration/vouchers', [AdministrationVoucherController::class, 'store'])->name('administration-vouchers.store');

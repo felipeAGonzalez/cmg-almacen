@@ -48,6 +48,26 @@ class NursingVoucherPolicy
         return $user->isAdmin() || $voucher->requested_by === $user->getKey();
     }
 
+    public function requestReturn(User $user, NursingVoucher $voucher): bool
+    {
+        return $user->role === UserRole::NURSE && $voucher->requested_by === $user->getKey();
+    }
+
+    public function receiveReturn(User $user, NursingVoucher $voucher): bool
+    {
+        return $user->isAdmin() || $this->canOperate($user, $voucher);
+    }
+
+    public function rejectReturn(User $user, NursingVoucher $voucher): bool
+    {
+        return $this->receiveReturn($user, $voucher);
+    }
+
+    public function cancelReturn(User $user, NursingVoucher $voucher): bool
+    {
+        return $user->isAdmin() || $voucher->requested_by === $user->getKey();
+    }
+
     private function canOperate(User $user, NursingVoucher $voucher): bool
     {
         $isAssigned = $user->warehouses()->whereKey($voucher->warehouse_id)->exists();

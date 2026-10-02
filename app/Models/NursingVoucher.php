@@ -77,4 +77,9 @@ class NursingVoucher extends Model
     {
         return $this->hasMany(NursingVoucherFulfillment::class);
     }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(NursingVoucherReturn::class);
+    }
 }

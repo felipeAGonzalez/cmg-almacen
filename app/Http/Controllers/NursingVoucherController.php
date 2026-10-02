@@ -11,6 +11,7 @@ use App\Http\Requests\RejectNursingVoucherRequest;
 use App\Http\Requests\StoreNursingVoucherRequest;
 use App\Models\NursingVoucher;
 use App\Models\Warehouse;
+use App\Services\NursingVoucherReturnService;
 use App\Services\NursingVoucherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
@@ -93,7 +94,7 @@ class NursingVoucherController extends Controller
             ->with('success', 'El vale de Enfermería se creó correctamente.');
     }
 
-    public function show(NursingVoucher $nursingVoucher): View
+    public function show(NursingVoucher $nursingVoucher, NursingVoucherReturnService $returnService): View
     {
         Gate::authorize('view', $nursingVoucher);
         $nursingVoucher->load([
@@ -106,6 +107,12 @@ class NursingVoucherController extends Controller
             'fulfillments.items.allocations.inventoryBatch',
             'cancelledBy',
             'rejectedBy',
+            'returns.requester',
+            'returns.receivedBy',
+            'returns.rejectedBy',
+            'returns.cancelledBy',
+            'returns.items.allocation.inventoryBatch',
+            'returns.items.allocation.fulfillmentItem.voucherItem.product.unit',
         ]);
 
         $productIds = $nursingVoucher->items->pluck('product_id');
@@ -120,6 +127,7 @@ class NursingVoucherController extends Controller
         return view('nursing-vouchers.show', [
             'voucher' => $nursingVoucher,
             'inventoryItems' => $inventoryItems,
+            'returnableQuantities' => $returnService->returnableQuantities($nursingVoucher),
         ]);
     }
 
