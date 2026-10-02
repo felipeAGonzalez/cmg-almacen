@@ -4,9 +4,18 @@
     $selectedWarehouseIds = collect(old('warehouse_ids', $isEditing ? $user->warehouses->modelKeys() : []))
         ->map(fn ($warehouseId) => (int) $warehouseId)
         ->all();
+    $selectedHospitalUserId = (string) old('hospital_user_id', $user->hospital_user_id ?? '');
 @endphp
 
-<form method="POST" action="{{ $isEditing ? route('users.update', $user) : route('users.store') }}" novalidate>
+<form
+    method="POST"
+    action="{{ $isEditing ? route('users.update', $user) : route('users.store') }}"
+    novalidate
+    data-user-form
+    data-hospital-nurses-url="{{ route('users.hospital-nurses', $isEditing ? ['user_id' => $user->id] : []) }}"
+    data-current-hospital-user-id="{{ $selectedHospitalUserId }}"
+    data-is-editing="{{ $isEditing ? 'true' : 'false' }}"
+>
     @csrf
     @if ($isEditing)
         @method('PUT')
@@ -100,10 +109,46 @@
             </div>
 
             <div class="col-12" id="hospitalUserLink" hidden>
-                <label for="hospital_user_id" class="form-label">ID de usuario en Hospitalización</label>
-                <input type="text" id="hospital_user_id" name="hospital_user_id" value="{{ old('hospital_user_id', $user->hospital_user_id ?? '') }}" class="form-control @error('hospital_user_id') is-invalid @enderror" maxlength="255" autocomplete="off">
-                <div class="form-text">Identificador utilizado para vincular esta cuenta con el sistema de Hospitalización.</div>
-                @error('hospital_user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <section class="border rounded-3 bg-body-tertiary p-3 p-md-4" aria-labelledby="hospital-link-title">
+                    <div class="d-flex gap-3 align-items-start mb-3">
+                        <span class="admin-brand-mark flex-shrink-0" aria-hidden="true"><i class="bi bi-hospital"></i></span>
+                        <div>
+                            <h4 class="h6 fw-bold mb-1" id="hospital-link-title">Vinculación con Hospitalización</h4>
+                            <p class="small text-body-secondary mb-0">Selecciona la cuenta de Enfermería correspondiente en el sistema de Hospitalización.</p>
+                        </div>
+                    </div>
+
+                    <div class="alert alert-info py-2 d-none" data-current-hospital-nurse>
+                        <div class="small fw-semibold mb-1">Cuenta vinculada actualmente</div>
+                        <div data-current-hospital-nurse-name></div>
+                        <div class="small text-body-secondary" data-current-hospital-nurse-email></div>
+                    </div>
+
+                    <div data-hospital-nurse-status aria-live="polite" aria-atomic="true"></div>
+
+                    <div class="mb-3 d-none" data-hospital-nurse-search-wrap>
+                        <label for="hospital_nurse_search" class="form-label">Buscar enfermera</label>
+                        <input type="search" id="hospital_nurse_search" class="form-control" placeholder="Buscar por nombre o correo" autocomplete="off" data-hospital-nurse-search>
+                    </div>
+
+                    <div data-hospital-nurse-selector hidden>
+                        <label for="hospital_user_id" class="form-label">Usuario de Hospitalización</label>
+                        @if ($isEditing && $selectedHospitalUserId !== '')
+                            <p class="small text-body-secondary">Puedes conservar la vinculación actual o seleccionar otra enfermera.</p>
+                        @endif
+                        <select id="hospital_user_id" name="hospital_user_id" class="form-select @error('hospital_user_id') is-invalid @enderror" disabled>
+                            <option value="">Selecciona una enfermera</option>
+                        </select>
+                        @error('hospital_user_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                        <div class="form-text">La vinculación es opcional. Puedes guardar la enfermera sin vincularla.</div>
+                    </div>
+                </section>
+            </div>
+            <div class="col-12 d-none" data-hospital-link-removal role="status">
+                <div class="alert alert-warning py-2 mb-0">
+                    <i class="bi bi-exclamation-triangle me-1" aria-hidden="true"></i>
+                    La vinculación con Hospitalización se eliminará al guardar.
+                </div>
             </div>
         </div>
     </div>
@@ -132,57 +177,8 @@
 
     <div class="form-actions">
         <a href="{{ route('users.index') }}" class="btn btn-light border">Cancelar</a>
-        <button type="submit" class="btn btn-primary">
-            <i class="bi bi-check-lg me-1" aria-hidden="true"></i>{{ $isEditing ? 'Guardar cambios' : 'Guardar usuario' }}
+        <button type="submit" class="btn btn-primary" data-user-submit data-default-label="{{ $isEditing ? 'Guardar cambios' : 'Guardar usuario' }}">
+            <i class="bi bi-check-lg me-1" aria-hidden="true"></i><span data-user-submit-label>{{ $isEditing ? 'Guardar cambios' : 'Guardar usuario' }}</span>
         </button>
     </div>
 </form>
-
-@push('scripts')
-    <script>
-        document.addEventListener('DOMContentLoaded', function () {
-            const roleSelect = document.getElementById('role');
-            const warehouseSelection = document.getElementById('warehouseSelection');
-            const administratorNotice = document.getElementById('administratorAccessNotice');
-            const warehouseInputs = warehouseSelection.querySelectorAll('input[type="checkbox"]');
-            const hospitalUserLink = document.getElementById('hospitalUserLink');
-            const hospitalUserInput = document.getElementById('hospital_user_id');
-            const warehouseSelectionHelp = document.getElementById('warehouseSelectionHelp');
-
-            function enforceNurseWarehouseLimit(changedInput) {
-                if (roleSelect.value !== 'nurse' || !changedInput.checked) {
-                    return;
-                }
-
-                warehouseInputs.forEach(function (input) {
-                    if (input !== changedInput) {
-                        input.checked = false;
-                    }
-                });
-            }
-
-            function updateWarehouseSelection() {
-                const isAdministrator = roleSelect.value === 'administrator';
-                administratorNotice.hidden = !isAdministrator;
-                warehouseSelection.hidden = isAdministrator;
-                warehouseInputs.forEach(function (input) {
-                    input.disabled = isAdministrator;
-                });
-                const isNurse = roleSelect.value === 'nurse';
-                warehouseSelectionHelp.textContent = isNurse
-                    ? 'Selecciona como máximo un almacén.'
-                    : 'Selecciona uno o varios almacenes.';
-                hospitalUserLink.hidden = !isNurse;
-                hospitalUserInput.disabled = !isNurse;
-            }
-
-            roleSelect.addEventListener('change', updateWarehouseSelection);
-            warehouseInputs.forEach(function (input) {
-                input.addEventListener('change', function () {
-                    enforceNurseWarehouseLimit(input);
-                });
-            });
-            updateWarehouseSelection();
-        });
-    </script>
-@endpush

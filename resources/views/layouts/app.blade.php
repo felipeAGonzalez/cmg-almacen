@@ -138,6 +138,12 @@
                         <i class="bi bi-clipboard2-pulse" aria-hidden="true"></i>
                         <span>Vales de Enfermería</span>
                     </a>
+                    @if (Auth::user()->role === \App\Enums\UserRole::NURSE && filled(config('hospital.web_url')))
+                        <a href="{{ rtrim(config('hospital.web_url'), '/') }}" class="admin-nav-link">
+                            <i class="bi bi-box-arrow-left" aria-hidden="true"></i>
+                            <span>Regresar a Hospitalización</span>
+                        </a>
+                    @endif
                 @endcan
             </nav>
 

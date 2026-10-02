@@ -11,6 +11,7 @@ use App\Http\Controllers\EntryController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HospitalDelegatedAuthController;
 use App\Http\Controllers\HospitalIntegrationController;
+use App\Http\Controllers\HospitalNurseOptionsController;
 use App\Http\Controllers\InventoryAdjustmentController;
 use App\Http\Controllers\InventoryKardexController;
 use App\Http\Controllers\InventoryOutboundController;
@@ -69,6 +70,10 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::resource('users', UserController::class)
         ->except('show')
         ->middleware('role:administrator');
+
+    Route::get('admin/users/hospital-nurses', HospitalNurseOptionsController::class)
+        ->middleware(['role:administrator', 'throttle:20,1'])
+        ->name('users.hospital-nurses');
 
     Route::get('settings/operations', [OperationalSettingController::class, 'edit'])
         ->middleware('role:administrator')

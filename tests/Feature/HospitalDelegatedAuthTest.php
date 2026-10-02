@@ -4,8 +4,11 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\User;
+use App\Models\Warehouse;
+use Carbon\Carbon;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Support\Facades\Cache;
+use Illuminate\Support\Facades\Http;
 use Tests\TestCase;
 
 class HospitalDelegatedAuthTest extends TestCase
@@ -25,6 +28,12 @@ class HospitalDelegatedAuthTest extends TestCase
             'hospital.delegated_auth.clock_skew' => 5,
         ]);
         Cache::flush();
+    }
+
+    protected function tearDown(): void
+    {
+        Carbon::setTestNow();
+        parent::tearDown();
     }
 
     public function test_linked_nurse_can_consume_token_and_receives_minimal_context(): void
@@ -56,13 +65,24 @@ class HospitalDelegatedAuthTest extends TestCase
             $this->actingAs(User::factory()->create(['role' => $role]))->get($route)->assertForbidden();
         }
 
-        $this->actingAs(User::factory()->create(['role' => UserRole::NURSE]))
+        Carbon::setTestNow('2026-09-21 10:00:00');
+        $nurse = User::factory()->create(['role' => UserRole::NURSE]);
+        $nurse->warehouses()->attach(Warehouse::factory()->create());
+        Http::fake(fn () => Http::response(['data' => [[
+            'patient_id' => 'patient-10',
+            'hospitalization_id' => 'stay-20',
+            'patient_name' => 'Paciente validado',
+            'room_id' => 'room-7',
+            'room_number' => '204',
+        ]]]));
+
+        $this->actingAs($nurse)
             ->withSession(['hospital_context' => [
                 'patient_id' => 'patient-10', 'hospitalization_id' => 'stay-20',
                 'room_id' => 'room-7', 'room_number' => '204',
             ]])->get($route)->assertOk()
-            ->assertSee('Acceso desde Hospitalización')
-            ->assertSee('ID hospitalización')
+            ->assertSee('Paciente seleccionado desde Hospitalización')
+            ->assertSee('Paciente validado')
             ->assertSee('204');
     }
 

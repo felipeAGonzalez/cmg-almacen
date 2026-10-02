@@ -2,7 +2,9 @@
 
 namespace App\Http\Requests;
 
+use App\Contracts\HospitalNurseProvider;
 use App\Enums\UserRole;
+use App\Rules\HospitalNurseExists;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Foundation\Http\FormRequest;
 use Illuminate\Validation\Rule;
@@ -36,6 +38,7 @@ class StoreUserRequest extends FormRequest
                 'nullable',
                 'string',
                 'max:255',
+                new HospitalNurseExists(app(HospitalNurseProvider::class)),
                 'unique:users,hospital_user_id',
             ],
             'warehouse_ids' => [Rule::excludeIf($isAdministrator), Rule::requiredIf($requiresWarehouses), 'array', Rule::when($isNurse, ['max:1'])],
@@ -59,7 +62,7 @@ class StoreUserRequest extends FormRequest
             'password.min' => 'La contraseña debe tener al menos 8 caracteres.',
             'role.required' => 'El cargo es obligatorio.',
             'role.in' => 'El cargo seleccionado no es válido.',
-            'hospital_user_id.unique' => 'El ID de usuario en Hospitalización ya está vinculado con otra cuenta.',
+            'hospital_user_id.unique' => 'La enfermera seleccionada ya está vinculada a otro usuario.',
             'warehouse_ids.required' => 'Debes seleccionar al menos un almacén para el cargo elegido.',
             'warehouse_ids.array' => 'Los almacenes seleccionados no son válidos.',
             'warehouse_ids.min' => 'Debes seleccionar al menos un almacén para el cargo elegido.',
@@ -81,7 +84,7 @@ class StoreUserRequest extends FormRequest
             'email' => 'correo electrónico',
             'password' => 'contraseña',
             'role' => 'cargo',
-            'hospital_user_id' => 'ID de usuario en Hospitalización',
+            'hospital_user_id' => 'usuario de Hospitalización',
             'warehouse_ids' => 'almacenes',
             'warehouse_ids.*' => 'almacén',
         ];

@@ -4,12 +4,16 @@ namespace App\Http\Controllers;
 
 use App\Enums\UserRole;
 use App\Exceptions\HospitalDelegatedAuthException;
+use App\Exceptions\HospitalIntegrationException;
+use App\Exceptions\NursingSupplyConfigurationException;
 use App\Models\User;
 use App\Services\HospitalDelegatedAuthService;
+use App\Services\NursingVoucherService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Auth;
 use Illuminate\Support\Facades\Log;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class HospitalDelegatedAuthController extends Controller
@@ -59,10 +63,38 @@ class HospitalDelegatedAuthController extends Controller
         }
     }
 
-    public function context(Request $request): View
+    public function context(Request $request, NursingVoucherService $vouchers): View
     {
+        $hospitalContext = $request->session()->get('hospital_context');
+
+        if (! is_array($hospitalContext)) {
+            return view('nursing.hospital-context', [
+                'hospitalContext' => null,
+                'contextError' => 'No hay un contexto hospitalario disponible en esta sesión.',
+            ]);
+        }
+
+        try {
+            $context = $vouchers->creationContextForNurse($request->user(), $hospitalContext);
+
+            return view('nursing.hospital-context', [
+                'hospitalContext' => $hospitalContext,
+                'hospitalization' => $context['hospitalization'],
+                'source' => $context['source'],
+            ]);
+        } catch (HospitalIntegrationException) {
+            $message = 'No fue posible validar la información del paciente en Hospitalización.';
+        } catch (NursingSupplyConfigurationException $exception) {
+            $message = str_contains($exception->getMessage(), 'gabinete predeterminado')
+                ? 'No hay un gabinete de Enfermería configurado para este almacén.'
+                : $exception->getMessage();
+        } catch (ValidationException $exception) {
+            $message = (string) collect($exception->errors())->flatten()->first();
+        }
+
         return view('nursing.hospital-context', [
-            'hospitalContext' => $request->session()->get('hospital_context'),
+            'hospitalContext' => $hospitalContext,
+            'contextError' => $message,
         ]);
     }
 

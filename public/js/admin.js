@@ -1,4 +1,169 @@
 document.addEventListener('DOMContentLoaded', function () {
+    const form = document.querySelector('[data-user-form]');
+    if (!form) return;
+
+    const roleSelect = form.querySelector('#role');
+    const warehouseSelection = form.querySelector('#warehouseSelection');
+    const administratorNotice = form.querySelector('#administratorAccessNotice');
+    const warehouseInputs = warehouseSelection.querySelectorAll('input[type="checkbox"]');
+    const warehouseSelectionHelp = form.querySelector('#warehouseSelectionHelp');
+    const hospitalSection = form.querySelector('#hospitalUserLink');
+    const hospitalSelect = form.querySelector('#hospital_user_id');
+    const hospitalStatus = form.querySelector('[data-hospital-nurse-status]');
+    const hospitalSelector = form.querySelector('[data-hospital-nurse-selector]');
+    const currentLink = form.querySelector('[data-current-hospital-nurse]');
+    const currentLinkName = form.querySelector('[data-current-hospital-nurse-name]');
+    const currentLinkEmail = form.querySelector('[data-current-hospital-nurse-email]');
+    const removalWarning = form.querySelector('[data-hospital-link-removal]');
+    const searchWrap = form.querySelector('[data-hospital-nurse-search-wrap]');
+    const searchInput = form.querySelector('[data-hospital-nurse-search]');
+    const submitButton = form.querySelector('[data-user-submit]');
+    const submitLabel = form.querySelector('[data-user-submit-label]');
+    const currentHospitalUserId = form.dataset.currentHospitalUserId || '';
+    let rememberedHospitalUserId = currentHospitalUserId;
+    let hospitalNurses = [];
+    let nursesLoaded = false;
+    let loadingNurses = false;
+
+    function enforceNurseWarehouseLimit(changedInput) {
+        if (roleSelect.value !== 'nurse' || !changedInput.checked) return;
+        warehouseInputs.forEach(function (input) {
+            if (input !== changedInput) input.checked = false;
+        });
+    }
+
+    function renderHospitalNurseOptions(nurses, selectedId = '') {
+        hospitalSelect.innerHTML = '<option value="">Selecciona una enfermera</option>';
+        nurses.forEach(function (nurse) {
+            const option = new Option(`${nurse.name} — ${nurse.email}`, nurse.hospital_user_id);
+            option.selected = String(nurse.hospital_user_id) === String(selectedId);
+            hospitalSelect.add(option);
+        });
+    }
+
+    function renderCurrentHospitalNurse() {
+        const nurse = hospitalNurses.find(function (item) {
+            return String(item.hospital_user_id) === String(currentHospitalUserId);
+        });
+        currentLink.classList.toggle('d-none', !currentHospitalUserId);
+        if (!currentHospitalUserId) return;
+
+        currentLinkName.textContent = nurse?.name || `ID vinculado: ${currentHospitalUserId}`;
+        currentLinkEmail.textContent = nurse?.email || 'Los datos descriptivos no están disponibles en este momento.';
+    }
+
+    function renderHospitalNurseLoading() {
+        hospitalSelector.hidden = true;
+        hospitalSelect.disabled = true;
+        searchWrap.classList.add('d-none');
+        hospitalStatus.innerHTML = '<div class="d-flex align-items-center gap-2 text-body-secondary py-2"><span class="spinner-border spinner-border-sm" aria-hidden="true"></span><span>Consultando enfermeras de Hospitalización...</span></div>';
+    }
+
+    function renderHospitalNurseError() {
+        hospitalStatus.innerHTML = '<div class="alert alert-warning mb-3" role="alert"><div class="fw-semibold">No fue posible consultar las enfermeras de Hospitalización.</div><div class="small mt-1">Verifica la conexión con Hospitalización e inténtalo nuevamente.</div><button type="button" class="btn btn-sm btn-outline-secondary mt-3" data-retry-hospital-nurses>Reintentar</button></div>';
+        currentLink.classList.toggle('d-none', !currentHospitalUserId);
+        if (currentHospitalUserId) {
+            currentLinkName.textContent = `ID vinculado: ${currentHospitalUserId}`;
+            currentLinkEmail.textContent = 'La vinculación actual se conservará.';
+            renderHospitalNurseOptions([], currentHospitalUserId);
+            hospitalSelect.add(new Option(`Vinculación actual (${currentHospitalUserId})`, currentHospitalUserId, true, true));
+            hospitalSelect.disabled = false;
+        } else {
+            hospitalStatus.insertAdjacentHTML('beforeend', '<div class="small text-body-secondary mt-2">La enfermera se creará sin vinculación con Hospitalización.</div>');
+            hospitalSelect.disabled = true;
+        }
+        hospitalSelector.hidden = true;
+        hospitalStatus.querySelector('[data-retry-hospital-nurses]').addEventListener('click', function (event) {
+            event.currentTarget.disabled = true;
+            loadHospitalNurses(true);
+        });
+    }
+
+    function renderHospitalNurseList(payload) {
+        hospitalNurses = payload.data || [];
+        nursesLoaded = true;
+        hospitalStatus.innerHTML = '';
+        renderCurrentHospitalNurse();
+        const selectedId = rememberedHospitalUserId || currentHospitalUserId;
+        renderHospitalNurseOptions(hospitalNurses, selectedId);
+        hospitalSelect.disabled = false;
+        hospitalSelector.hidden = false;
+        searchWrap.classList.toggle('d-none', hospitalNurses.length < 10);
+
+        if (hospitalNurses.length === 0) {
+            const message = Number(payload.meta?.total || 0) > 0
+                ? 'Todas las enfermeras de Hospitalización ya están vinculadas.'
+                : 'No hay enfermeras disponibles para vincular.';
+            hospitalStatus.innerHTML = `<div class="alert alert-light border py-2 mb-3">${message}</div>`;
+        }
+    }
+
+    async function loadHospitalNurses(force = false) {
+        if (loadingNurses || (nursesLoaded && !force)) return;
+        loadingNurses = true;
+        renderHospitalNurseLoading();
+        try {
+            const response = await fetch(form.dataset.hospitalNursesUrl, {
+                headers: { Accept: 'application/json', 'X-Requested-With': 'XMLHttpRequest' },
+                credentials: 'same-origin',
+            });
+            if (!response.ok) throw new Error('Hospital nurse request failed.');
+            renderHospitalNurseList(await response.json());
+        } catch (error) {
+            renderHospitalNurseError();
+            if (force) {
+                hospitalStatus.querySelector('[data-retry-hospital-nurses]')?.focus();
+            }
+        } finally {
+            loadingNurses = false;
+        }
+    }
+
+    function updateUserForm() {
+        const isAdministrator = roleSelect.value === 'administrator';
+        const isNurse = roleSelect.value === 'nurse';
+        administratorNotice.hidden = !isAdministrator;
+        warehouseSelection.hidden = isAdministrator;
+        warehouseInputs.forEach(function (input) { input.disabled = isAdministrator; });
+        warehouseSelectionHelp.textContent = isNurse
+            ? 'Selecciona como máximo un almacén.'
+            : 'Selecciona uno o varios almacenes.';
+        hospitalSection.hidden = !isNurse;
+        removalWarning.classList.toggle('d-none', isNurse || !currentHospitalUserId);
+
+        if (isNurse) {
+            if (rememberedHospitalUserId) hospitalSelect.value = rememberedHospitalUserId;
+            loadHospitalNurses();
+        } else {
+            rememberedHospitalUserId = hospitalSelect.value || rememberedHospitalUserId;
+            hospitalSelect.value = '';
+            hospitalSelect.disabled = true;
+        }
+    }
+
+    hospitalSelect.addEventListener('change', function () {
+        rememberedHospitalUserId = hospitalSelect.value;
+    });
+    searchInput.addEventListener('input', function () {
+        const query = searchInput.value.trim().toLocaleLowerCase('es');
+        Array.from(hospitalSelect.options).forEach(function (option) {
+            if (!option.value) return;
+            option.hidden = query !== '' && !option.text.toLocaleLowerCase('es').includes(query);
+        });
+    });
+    roleSelect.addEventListener('change', updateUserForm);
+    warehouseInputs.forEach(function (input) {
+        input.addEventListener('change', function () { enforceNurseWarehouseLimit(input); });
+    });
+    form.addEventListener('submit', function () {
+        submitButton.disabled = true;
+        submitButton.setAttribute('aria-disabled', 'true');
+        submitLabel.textContent = 'Guardando...';
+    });
+    updateUserForm();
+});
+
+document.addEventListener('DOMContentLoaded', function () {
     document.querySelectorAll('[data-modal-name-target][data-modal-form-target]').forEach(function (trigger) {
         trigger.addEventListener('click', function () {
             const nameTarget = document.querySelector(trigger.dataset.modalNameTarget);
