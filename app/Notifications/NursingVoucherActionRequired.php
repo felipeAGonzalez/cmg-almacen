@@ -4,6 +4,7 @@ namespace App\Notifications;
 
 use App\Models\NursingVoucher;
 use Illuminate\Bus\Queueable;
+use Illuminate\Notifications\Messages\BroadcastMessage;
 use Illuminate\Notifications\Notification;
 
 class NursingVoucherActionRequired extends Notification
@@ -18,7 +19,15 @@ class NursingVoucherActionRequired extends Notification
 
     public function via(object $notifiable): array
     {
-        return ['database'];
+        return ['database', 'broadcast'];
+    }
+
+    public function toBroadcast(object $notifiable): BroadcastMessage
+    {
+        return new BroadcastMessage([
+            ...$this->toArray($notifiable),
+            'action_url' => route('nursing-vouchers.show', $this->voucher, absolute: false),
+        ]);
     }
 
     public function toArray(object $notifiable): array

@@ -23,6 +23,7 @@ RUN apt-get update \
         libonig-dev \
         libpng-dev \
         libxml2-dev \
+        supervisor \
         unzip \
         zip \
     && docker-php-ext-install -j"$(nproc)" \
@@ -45,6 +46,7 @@ COPY . .
 COPY --from=frontend /var/www/html/public/build ./public/build
 COPY .docker/000-default.conf /etc/apache2/sites-available/000-default.conf
 COPY .docker/php.ini /usr/local/etc/php/conf.d/cmg.ini
+COPY .docker/supervisord.conf /etc/supervisor/conf.d/cmg.conf
 
 RUN composer install \
         --no-dev \
@@ -54,9 +56,9 @@ RUN composer install \
         --optimize-autoloader \
     && chown -R www-data:www-data storage bootstrap/cache
 
-EXPOSE 80
+EXPOSE 80 8080
 
 HEALTHCHECK --interval=30s --timeout=5s --start-period=15s --retries=3 \
     CMD curl --fail --silent --show-error http://127.0.0.1/health >/dev/null || exit 1
 
-CMD ["apache2-foreground"]
+CMD ["/usr/bin/supervisord", "-c", "/etc/supervisor/supervisord.conf", "-n"]

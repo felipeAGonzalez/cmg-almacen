@@ -16,9 +16,17 @@
         href="https://cdn.jsdelivr.net/npm/bootstrap-icons@1.11.3/font/bootstrap-icons.min.css"
     >
     <link rel="stylesheet" href="{{ asset('css/admin.css') }}">
+    @vite('resources/js/app.js')
     @stack('styles')
 </head>
-<body class="admin-body">
+<body
+    class="admin-body"
+    data-realtime-user-id="{{ Auth::id() }}"
+    data-reverb-key="{{ config('broadcasting.connections.reverb.key') }}"
+    data-reverb-host="{{ config('broadcasting.connections.reverb.options.host') }}"
+    data-reverb-port="{{ config('broadcasting.connections.reverb.options.port') }}"
+    data-reverb-scheme="{{ config('broadcasting.connections.reverb.options.scheme') }}"
+>
     <aside class="offcanvas-lg offcanvas-start admin-sidebar" tabindex="-1" id="adminSidebar" aria-labelledby="adminSidebarLabel">
         <div class="offcanvas-header border-bottom border-light border-opacity-10 d-lg-none">
             <h2 class="offcanvas-title fs-5 text-white" id="adminSidebarLabel">CMG Almacén</h2>
@@ -45,9 +53,10 @@
                     <a href="{{ route('notifications.index') }}" class="admin-nav-link {{ request()->routeIs('notifications.*') ? 'active' : '' }}">
                         <i class="bi bi-bell" aria-hidden="true"></i>
                         <span>Notificaciones</span>
-                        @if ($unreadNotificationCount > 0)
-                            <span class="badge rounded-pill text-bg-danger ms-auto">{{ $unreadNotificationCount }}</span>
-                        @endif
+                        <span
+                            class="badge rounded-pill text-bg-danger ms-auto {{ $unreadNotificationCount > 0 ? '' : 'd-none' }}"
+                            data-notification-badge
+                        >{{ $unreadNotificationCount }}</span>
                     </a>
                 @endif
                 @if (Auth::user()->isAdmin())
@@ -210,6 +219,13 @@
             @yield('content')
         </main>
     </div>
+
+    <div
+        class="toast-container position-fixed top-0 end-0 p-3"
+        data-realtime-notifications
+        aria-label="Notificaciones en tiempo real"
+        style="z-index: 1090"
+    ></div>
 
     <script
         src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.3/dist/js/bootstrap.bundle.min.js"

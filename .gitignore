@@ -1,5 +1,6 @@
 /vendor
 /node_modules
+/public/build
 .env
 /public/storage
 /storage/*.key

@@ -42,10 +42,17 @@ services:
       - composer_cache:/tmp/composer
     ports:
       - 80:80
-    command: >
-      sh -c 'composer install
-      && rm -Rf public/storage || true && php artisan storage:link
-      && php artisan serve --host=0.0.0.0 --port=80'
+      - 8081:8081
+    command: |
+      sh -c '
+        set -e
+        composer install
+        rm -Rf public/storage || true
+        php artisan storage:link
+        php artisan queue:work --sleep=1 --tries=3 &
+        php artisan reverb:start --host=0.0.0.0 --port=8081 &
+        exec php artisan serve --host=0.0.0.0 --port=80
+      '
 volumes:
   db:
   vendor:
