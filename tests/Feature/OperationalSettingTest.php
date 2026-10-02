@@ -15,6 +15,11 @@ class OperationalSettingTest extends TestCase
 {
     use RefreshDatabase;
 
+    public function test_application_uses_configured_mexico_timezone(): void
+    {
+        $this->assertSame('America/Mexico_City', config('app.timezone'));
+    }
+
     public function test_seeder_creates_default_configuration_idempotently(): void
     {
         $this->seed(OperationalSettingSeeder::class);
