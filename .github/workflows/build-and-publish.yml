@@ -1,0 +1,306 @@
+name: Construir y publicar
+
+on:
+  workflow_dispatch:
+
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cmg-almacen-production
+  cancel-in-progress: false
+
+jobs:
+  test:
+    name: Pruebas
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+
+    services:
+      mysql:
+        image: mysql:8.0
+        env:
+          MYSQL_DATABASE: cmg_test_mysql
+          MYSQL_USER: cmg
+          MYSQL_PASSWORD: cmg_test
+          MYSQL_ROOT_PASSWORD: root
+        ports:
+          - 3306:3306
+        options: >-
+          --health-cmd="mysqladmin ping -h 127.0.0.1 -uroot -proot"
+          --health-interval=5s
+          --health-timeout=5s
+          --health-retries=20
+
+    env:
+      APP_ENV: testing
+      APP_DEBUG: 'false'
+      APP_URL: http://localhost
+      APP_TIMEZONE: America/Mexico_City
+      BROADCAST_CONNECTION: 'null'
+      CACHE_STORE: array
+      DB_CONNECTION: mysql
+      DB_HOST: 127.0.0.1
+      DB_PORT: '3306'
+      DB_DATABASE: cmg_test_mysql
+      DB_USERNAME: cmg
+      DB_PASSWORD: cmg_test
+      MAIL_MAILER: array
+      QUEUE_CONNECTION: sync
+      SESSION_DRIVER: array
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v5
+
+      - name: Configurar PHP
+        uses: shivammathur/setup-php@v2
+        with:
+          php-version: '8.3'
+          extensions: bcmath, curl, dom, gd, mbstring, pcntl, pdo_mysql, pdo_sqlite, zip
+          coverage: none
+          tools: composer:v2
+
+      - name: Instalar dependencias PHP
+        run: composer install --no-interaction --no-progress --prefer-dist
+
+      - name: Preparar Laravel
+        run: |
+          cp .env.example .env
+          php artisan key:generate
+
+      - name: Configurar Node
+        uses: actions/setup-node@v5
+        with:
+          node-version: '22'
+          cache: npm
+
+      - name: Instalar dependencias frontend
+        run: npm ci --no-audit --no-fund
+
+      - name: Construir frontend
+        run: npm run build
+
+      - name: Verificar formato PHP
+        run: ./vendor/bin/pint --test
+
+      - name: Ejecutar suite funcional
+        env:
+          DB_CONNECTION: sqlite
+          DB_DATABASE: ':memory:'
+        run: php artisan test
+
+      - name: Preparar base MySQL de integración
+        run: php artisan migrate:fresh --force
+
+      - name: Ejecutar pruebas reales de concurrencia MySQL
+        run: php artisan test tests/Integration/MySqlConcurrencyTest.php
+
+  docker:
+    name: Construir imagen Docker
+    runs-on: ubuntu-latest
+    needs: test
+    timeout-minutes: 30
+
+    steps:
+      - name: Descargar código
+        uses: actions/checkout@v5
+
+      - name: Configurar Docker Buildx
+        uses: docker/setup-buildx-action@v4
+
+      - name: Iniciar sesión en Docker Hub
+        uses: docker/login-action@v4
+        with:
+          username: ${{ secrets.DOCKERHUB_USERNAME }}
+          password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+      - name: Generar etiquetas Docker
+        id: meta
+        uses: docker/metadata-action@v6
+        with:
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/cmg-almacen
+          tags: |
+            type=ref,event=tag
+            type=sha,format=long,prefix=sha-
+            type=raw,value=latest
+
+      - name: Construir y publicar
+        uses: docker/build-push-action@v7
+        with:
+          context: .
+          file: .docker/Dockerfile
+          push: true
+          tags: ${{ steps.meta.outputs.tags }}
+          labels: ${{ steps.meta.outputs.labels }}
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+  deploy:
+    name: Desplegar en VPS
+    runs-on: ubuntu-latest
+    needs: docker
+    environment: production
+    timeout-minutes: 15
+
+    steps:
+      - name: Configurar SSH
+        run: |
+          mkdir -p ~/.ssh
+          chmod 700 ~/.ssh
+
+          printf '%s\n' "${{ secrets.VPS_SSH_KEY }}" > ~/.ssh/id_ed25519
+          chmod 600 ~/.ssh/id_ed25519
+
+          printf '%s\n' "${{ secrets.VPS_KNOWN_HOSTS }}" > ~/.ssh/known_hosts
+          chmod 600 ~/.ssh/known_hosts
+
+      - name: Desplegar
+        env:
+          VPS_HOST: ${{ secrets.VPS_HOST }}
+          VPS_USER: ${{ secrets.VPS_USER }}
+          VPS_PORT: ${{ secrets.VPS_PORT }}
+          DOCKERHUB_USERNAME: ${{ secrets.DOCKERHUB_USERNAME }}
+          IMAGE_TAG: sha-${{ github.sha }}
+          APP_PORT: ${{ vars.CMG_APP_PORT }}
+          REVERB_PORT: ${{ vars.CMG_REVERB_PORT }}
+        run: |
+          ssh -p "$VPS_PORT" "$VPS_USER@$VPS_HOST" \
+            "DOCKERHUB_USERNAME='$DOCKERHUB_USERNAME' IMAGE_TAG='$IMAGE_TAG' APP_PORT='$APP_PORT' REVERB_PORT='$REVERB_PORT' bash -s" <<'REMOTE'
+          set -Eeuo pipefail
+
+          APP_DIR="$HOME/cmg-almacen"
+          ENV_FILE="$APP_DIR/.env"
+          CONTAINER="cmg-almacen"
+          ROLLBACK_CONTAINER="cmg-almacen-rollback"
+          IMAGE="$DOCKERHUB_USERNAME/cmg-almacen:$IMAGE_TAG"
+          OLD_IMAGE=""
+
+          is_healthy() {
+              curl -fsS "http://127.0.0.1:$APP_PORT/health" >/dev/null
+          }
+
+          rollback() {
+              docker rm -f "$CONTAINER" >/dev/null 2>&1 || true
+
+              if docker inspect "$ROLLBACK_CONTAINER" >/dev/null 2>&1; then
+                  echo "Restaurando versión anterior..."
+                  docker rename "$ROLLBACK_CONTAINER" "$CONTAINER"
+                  docker start "$CONTAINER"
+
+                  for i in $(seq 1 30); do
+                      if is_healthy; then
+                          echo "Rollback completado correctamente a: $OLD_IMAGE"
+                          return 0
+                      fi
+
+                      sleep 2
+                  done
+
+                  echo "CRÍTICO: el rollback tampoco respondió."
+                  return 1
+              fi
+
+              echo "No existe contenedor anterior para rollback."
+              return 1
+          }
+
+          if [ ! -f "$ENV_FILE" ]; then
+              echo "No existe el archivo $ENV_FILE"
+              exit 1
+          fi
+
+          if [ -z "$APP_PORT" ] || [ -z "$REVERB_PORT" ]; then
+              echo "Debes configurar CMG_APP_PORT y CMG_REVERB_PORT en el environment production."
+              exit 1
+          fi
+
+          echo "Descargando nueva imagen..."
+          docker pull "$IMAGE"
+
+          echo "Aplicando migraciones explícitas..."
+          if ! docker run --rm \
+              -v "$ENV_FILE:/var/www/html/.env:ro" \
+              "$IMAGE" php artisan migrate --force
+          then
+              echo "Las migraciones fallaron; la versión actual permanece activa."
+              exit 1
+          fi
+
+          docker rm -f "$ROLLBACK_CONTAINER" >/dev/null 2>&1 || true
+
+          if docker inspect "$CONTAINER" >/dev/null 2>&1; then
+              OLD_IMAGE=$(docker inspect "$CONTAINER" --format='{{.Config.Image}}')
+              echo "Versión anterior: $OLD_IMAGE"
+              docker stop "$CONTAINER"
+              docker rename "$CONTAINER" "$ROLLBACK_CONTAINER"
+          else
+              echo "No existe una versión anterior."
+          fi
+
+          echo "Levantando nueva versión..."
+
+          if ! docker run -d \
+              --name "$CONTAINER" \
+              --restart unless-stopped \
+              -p "127.0.0.1:$APP_PORT:80" \
+              -p "127.0.0.1:$REVERB_PORT:8080" \
+              -v "$ENV_FILE:/var/www/html/.env:ro" \
+              "$IMAGE"
+          then
+              echo "No fue posible iniciar la nueva versión."
+              rollback || true
+              exit 1
+          fi
+
+          for i in $(seq 1 30); do
+              if docker exec "$CONTAINER" php artisan --version >/dev/null 2>&1; then
+                  break
+              fi
+
+              if [ "$i" -eq 30 ]; then
+                  echo "El contenedor no terminó de iniciar."
+                  docker logs --tail 100 "$CONTAINER" || true
+                  rollback || true
+                  exit 1
+              fi
+
+              sleep 2
+          done
+
+          echo "Generando cachés de Laravel..."
+          if ! docker exec "$CONTAINER" php artisan config:cache \
+              || ! docker exec "$CONTAINER" php artisan route:cache \
+              || ! docker exec "$CONTAINER" php artisan view:cache
+          then
+              echo "No fue posible preparar las cachés de Laravel."
+              docker logs --tail 100 "$CONTAINER" || true
+              rollback || true
+              exit 1
+          fi
+
+          docker restart "$CONTAINER" >/dev/null
+
+          echo "Comprobando nueva versión..."
+
+          for i in $(seq 1 30); do
+              if is_healthy; then
+                  echo "Nueva versión saludable."
+                  docker rm -f "$ROLLBACK_CONTAINER" >/dev/null 2>&1 || true
+                  echo "Deploy completado correctamente con imagen: $IMAGE"
+                  exit 0
+              fi
+
+              echo "Intento $i/30: aplicación todavía no disponible..."
+              sleep 2
+          done
+
+          echo "La nueva versión no respondió correctamente."
+          docker logs --tail 100 "$CONTAINER" || true
+          rollback || true
+          exit 1
+          REMOTE
