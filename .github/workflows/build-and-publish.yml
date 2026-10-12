@@ -123,7 +123,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v6
         with:
-          images: ${{ secrets.DOCKERHUB_USERNAME }}/cmg-almacen
+          images: ${{ secrets.DOCKERHUB_USERNAME }}/almacen
           tags: |
             type=ref,event=tag
             type=sha,format=long,prefix=sha-
@@ -173,11 +173,12 @@ jobs:
             "DOCKERHUB_USERNAME='$DOCKERHUB_USERNAME' IMAGE_TAG='$IMAGE_TAG' APP_PORT='$APP_PORT' REVERB_PORT='$REVERB_PORT' bash -s" <<'REMOTE'
           set -Eeuo pipefail
 
-          APP_DIR="$HOME/cmg-almacen"
+          APP_DIR="$HOME/almacen"
           ENV_FILE="$APP_DIR/.env"
-          CONTAINER="cmg-almacen"
-          ROLLBACK_CONTAINER="cmg-almacen-rollback"
-          IMAGE="$DOCKERHUB_USERNAME/cmg-almacen:$IMAGE_TAG"
+          LOG_DIR="$APP_DIR/storage/logs"
+          CONTAINER="almacen"
+          ROLLBACK_CONTAINER="almacen-rollback"
+          IMAGE="$DOCKERHUB_USERNAME/almacen:$IMAGE_TAG"
           OLD_IMAGE=""
 
           is_healthy() {
@@ -219,6 +220,13 @@ jobs:
               exit 1
           fi
 
+          if [ "$APP_PORT" = "$REVERB_PORT" ]; then
+              echo "CMG_APP_PORT y CMG_REVERB_PORT deben ser puertos distintos."
+              exit 1
+          fi
+
+          mkdir -p "$LOG_DIR"
+
           echo "Descargando nueva imagen..."
           docker pull "$IMAGE"
 
@@ -250,6 +258,7 @@ jobs:
               -p "127.0.0.1:$APP_PORT:80" \
               -p "127.0.0.1:$REVERB_PORT:8080" \
               -v "$ENV_FILE:/var/www/html/.env:ro" \
+              -v "$LOG_DIR:/var/www/html/storage/logs" \
               "$IMAGE"
           then
               echo "No fue posible iniciar la nueva versión."
