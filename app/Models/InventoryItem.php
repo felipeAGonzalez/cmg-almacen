@@ -59,6 +59,48 @@ class InventoryItem extends Model
                 ->whereDate('expiration_date', '<', $today)], 'available_quantity');
     }
 
+    public function scopeFilterInventory(Builder $query, array $filters): Builder
+    {
+        $search = $filters['search'] ?? null;
+
+        $query->when($search, fn (Builder $inventory) => $inventory->whereHas(
+            'product',
+            fn (Builder $product) => $product
+                ->where('name', 'like', "%{$search}%")
+                ->orWhere('code', 'like', "%{$search}%")
+                ->orWhere('barcode', 'like', "%{$search}%"),
+        ));
+
+        $today = today()->toDateString();
+        $usableStock = 'COALESCE((SELECT SUM(inventory_batches.available_quantity) FROM inventory_batches WHERE inventory_batches.inventory_item_id = inventory_items.id AND inventory_batches.available_quantity > 0 AND (inventory_batches.expiration_date IS NULL OR DATE(inventory_batches.expiration_date) >= ?)), 0)';
+
+        match ($filters['stock_status'] ?? null) {
+            self::STOCK_STATUS_CRITICAL => $query->whereRaw("{$usableStock} <= inventory_items.minimum_stock", [$today]),
+            self::STOCK_STATUS_LOW => $query
+                ->whereRaw("{$usableStock} > inventory_items.minimum_stock", [$today])
+                ->whereRaw("{$usableStock} < inventory_items.maximum_stock", [$today]),
+            self::STOCK_STATUS_HEALTHY => $query->whereRaw("{$usableStock} >= inventory_items.maximum_stock", [$today]),
+            default => null,
+        };
+
+        $expirationStatus = $filters['expiration_status'] ?? null;
+        $expirationFrom = $filters['expiration_from'] ?? null;
+        $expirationTo = $filters['expiration_to'] ?? null;
+
+        if ($expirationStatus || $expirationFrom || $expirationTo) {
+            $query->whereHas('batches', function (Builder $batches) use ($expirationStatus, $expirationFrom, $expirationTo, $today): void {
+                $batches->where('available_quantity', '>', 0)
+                    ->when($expirationStatus === 'expired', fn (Builder $batch) => $batch->whereDate('expiration_date', '<', $today))
+                    ->when($expirationStatus === 'valid', fn (Builder $batch) => $batch->whereDate('expiration_date', '>=', $today))
+                    ->when($expirationStatus === 'without_expiration', fn (Builder $batch) => $batch->whereNull('expiration_date'))
+                    ->when($expirationFrom, fn (Builder $batch) => $batch->whereDate('expiration_date', '>=', $expirationFrom))
+                    ->when($expirationTo, fn (Builder $batch) => $batch->whereDate('expiration_date', '<=', $expirationTo));
+            });
+        }
+
+        return $query;
+    }
+
     public function physicalStock(): string
     {
         return $this->decimalStockAttribute('physical_stock');

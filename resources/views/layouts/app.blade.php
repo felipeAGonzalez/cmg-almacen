@@ -60,6 +60,10 @@
                     </a>
                 @endif
                 @if (Auth::user()->isAdmin())
+                    <a href="{{ route('inventory.index') }}" class="admin-nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
+                        <i class="bi bi-clipboard-data" aria-hidden="true"></i>
+                        <span>Existencias</span>
+                    </a>
                     <a href="{{ route('users.index') }}" class="admin-nav-link {{ request()->routeIs('users.*') ? 'active' : '' }}">
                         <i class="bi bi-people" aria-hidden="true"></i>
                         <span>Usuarios</span>
@@ -68,6 +72,13 @@
                         <i class="bi bi-building" aria-hidden="true"></i>
                         <span>Almacenes</span>
                     </a>
+                    @php($outboundWarehouses = \App\Models\Warehouse::query()->orderBy('name')->get())
+                    @foreach ($outboundWarehouses as $outboundWarehouse)
+                        <a href="{{ route('warehouses.outbounds.index', $outboundWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.outbounds.*') && request()->route('warehouse')?->is($outboundWarehouse) ? 'active' : '' }}">
+                            <i class="bi bi-box-arrow-up-right" aria-hidden="true"></i>
+                            <span>Salidas{{ $outboundWarehouses->count() > 1 ? ' · '.$outboundWarehouse->name : '' }}</span>
+                        </a>
+                    @endforeach
                     <span class="admin-nav-label mt-4">CATÁLOGOS</span>
                     <a href="{{ route('units.index') }}" class="admin-nav-link {{ request()->routeIs('units.*') ? 'active' : '' }}">
                         <i class="bi bi-rulers" aria-hidden="true"></i>
@@ -95,6 +106,10 @@
                         <span>Integración hospitalaria</span>
                     </a>
                 @elseif (Auth::user()->role === \App\Enums\UserRole::WAREHOUSE_MANAGER)
+                    <a href="{{ route('inventory.index') }}" class="admin-nav-link {{ request()->routeIs('inventory.*') ? 'active' : '' }}">
+                        <i class="bi bi-clipboard-data" aria-hidden="true"></i>
+                        <span>Existencias</span>
+                    </a>
                     @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
                     @if ($assignedWarehouses->isNotEmpty())
                         <span class="admin-nav-label mt-4">MIS ALMACENES</span>

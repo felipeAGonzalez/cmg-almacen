@@ -16,6 +16,9 @@ class InventoryOutbound extends Model
 
     protected $fillable = [
         'reason',
+        'patient_name',
+        'room_number',
+        'requesting_area',
         'notes',
         'processed_by',
         'processed_at',

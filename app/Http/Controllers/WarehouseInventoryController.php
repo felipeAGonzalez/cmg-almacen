@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\InventoryFilterRequest;
 use App\Http\Requests\StoreInventoryItemRequest;
 use App\Http\Requests\UpdateInventoryItemRequest;
 use App\Models\InventoryItem;
@@ -13,15 +14,18 @@ use Illuminate\View\View;
 
 class WarehouseInventoryController extends Controller
 {
-    public function index(Warehouse $warehouse): View
+    public function index(InventoryFilterRequest $request, Warehouse $warehouse): View
     {
+        $filters = $request->validated();
         $inventoryItems = $warehouse->inventoryItems()
+            ->filterInventory($filters)
             ->withStockTotals()
             ->with(['product.unit', 'location'])
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('inventory.index', compact('warehouse', 'inventoryItems'));
+        return view('inventory.index', compact('warehouse', 'inventoryItems', 'filters'));
     }
 
     public function create(Warehouse $warehouse): View

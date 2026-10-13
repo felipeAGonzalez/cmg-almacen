@@ -21,7 +21,9 @@
                         'entry' => 'Proveedor: '.$movement->source_name,
                         'transfer_out' => 'Gabinete: '.$movement->destination_name,
                         'transfer_in' => 'Almacén: '.$movement->source_name,
-                        'manual_outbound' => $movement->reason_label ?: 'Salida del inventario',
+                        'manual_outbound' => $movement->patient_name
+                            ? 'Vale manual · Paciente: '.$movement->patient_name.($movement->room_number ? ' · Habitación '.$movement->room_number : '')
+                            : ($movement->reason_label ?: 'Salida del inventario'),
                         'adjustment_in', 'adjustment_out' => $movement->reason_label ?: 'Ajuste de inventario',
                         'nursing_voucher_warehouse_out' => 'Vale de Enfermería — Almacén · Paciente: '.$movement->patient_name.' · Habitación '.$movement->room_number,
                         'nursing_voucher_cabinet_out' => 'Vale de Enfermería — Gabinete · Paciente: '.$movement->patient_name.' · Habitación '.$movement->room_number,
@@ -40,7 +42,7 @@
                     $referenceLabel = match($movement->movement_type) {
                         'entry' => 'Ver entrada'.($movement->reference_code ? ' · '.$movement->reference_code : ''),
                         'transfer_in', 'transfer_out' => 'Ver transferencia',
-                        'manual_outbound' => 'Ver salida',
+                        'manual_outbound' => $movement->patient_name ? 'Vale manual #'.$movement->reference_id : 'Ver salida',
                         'adjustment_in', 'adjustment_out' => 'Ver ajuste',
                         'nursing_voucher_warehouse_out', 'nursing_voucher_cabinet_out', 'nursing_voucher_warehouse_return', 'nursing_voucher_cabinet_return' => 'Vale de Enfermería #'.$movement->reference_id,
                     };

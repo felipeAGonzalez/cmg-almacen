@@ -2,6 +2,7 @@
 
 @php($isCabinet = isset($cabinet))
 @php($inventoryCreateRoute = $isCabinet ? route('warehouses.cabinets.inventory.create', [$warehouse, $cabinet]) : route('warehouses.inventory.create', $warehouse))
+@php($filterAction = $isCabinet ? route('warehouses.cabinets.inventory.index', [$warehouse, $cabinet]) : route('warehouses.inventory.index', $warehouse))
 
 @section('page-title', $isCabinet ? 'Inventario del gabinete' : 'Inventario')
 
@@ -50,6 +51,8 @@
         <i class="bi bi-info-circle-fill me-2" aria-hidden="true"></i>La existencia se calcula a partir de los lotes disponibles. Los lotes vencidos se muestran por separado y no cuentan como existencia utilizable.
     </div>
 
+    @include('inventory._filters')
+
     <section class="admin-card overflow-hidden" aria-labelledby="inventory-list-title">
         <div class="admin-card-header">
             <h3 class="h6 fw-bold mb-1" id="inventory-list-title">Productos configurados</h3>
@@ -59,9 +62,9 @@
         @if ($inventoryItems->isEmpty())
             <div class="empty-state">
                 <span class="empty-state-icon" aria-hidden="true"><i class="bi bi-clipboard-data"></i></span>
-                <h3 class="h5">{{ $isCabinet ? 'No hay productos configurados en este gabinete.' : 'No hay productos configurados en este inventario.' }}</h3>
-                <p class="text-body-secondary mb-4">Agrega los productos que se manejarán en este punto de inventario.</p>
-                <a href="{{ $inventoryCreateRoute }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar producto</a>
+                <h3 class="h5">No se encontraron productos.</h3>
+                <p class="text-body-secondary mb-4">Ajusta los filtros o agrega productos a este punto de inventario.</p>
+                <div class="d-flex justify-content-center gap-2"><a href="{{ $filterAction }}" class="btn btn-light border">Limpiar filtros</a><a href="{{ $inventoryCreateRoute }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Agregar producto</a></div>
             </div>
         @else
             <div class="table-responsive">

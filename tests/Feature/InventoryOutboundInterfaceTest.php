@@ -34,6 +34,8 @@ class InventoryOutboundInterfaceTest extends TestCase
         foreach ([UserRole::ADMINISTRATOR, UserRole::ROOT] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]))->get(route('warehouses.index'))
                 ->assertOk()->assertSee(route('warehouses.outbounds.index', $warehouse), false)->assertSee('Salidas');
+            $this->get(route('home'))
+                ->assertOk()->assertSee(route('warehouses.outbounds.index', $warehouse), false)->assertSee('Salidas');
         }
         $manager = User::factory()->warehouseManager()->create();
         $manager->warehouses()->attach($warehouse);
@@ -72,6 +74,41 @@ class InventoryOutboundInterfaceTest extends TestCase
             $response->assertSee($reason->label());
         }
         $response->assertDontSee('Vale de enfermería')->assertDontSee('Vale de administración')->assertDontSee('Reposición de gabinete');
+    }
+
+    public function test_manual_patient_voucher_ui_captures_and_displays_its_destination(): void
+    {
+        [$warehouse, $item, $user] = $this->context();
+        $this->batch($warehouse, $item, '5');
+
+        $this->actingAs($user)->get(route('warehouses.outbounds.index', $warehouse))
+            ->assertOk()->assertSee('Registrar vale manual')
+            ->assertSee('reason=patient_care', false);
+
+        $this->get(route('warehouses.outbounds.create', [
+            $warehouse,
+            'reason' => InventoryOutboundReason::PATIENT_CARE->value,
+        ]))->assertOk()
+            ->assertSee('Destino del vale manual')
+            ->assertSee('name="patient_name"', false)
+            ->assertSee('name="room_number"', false)
+            ->assertSee('name="requesting_area"', false)
+            ->assertSee('no se validan con Hospitalización');
+
+        $this->post(route('warehouses.outbounds.store', $warehouse), [
+            'reason' => InventoryOutboundReason::PATIENT_CARE->value,
+            'patient_name' => 'Paciente Papel',
+            'room_number' => '310',
+            'requesting_area' => 'Urgencias',
+            'notes' => 'Vale recibido en papel',
+            'items' => [['inventory_item_id' => $item->id, 'quantity' => '1']],
+        ])->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::firstOrFail();
+        $this->get(route('warehouses.outbounds.show', [$warehouse, $outbound]))
+            ->assertOk()->assertSee('Vale manual #'.$outbound->id)
+            ->assertSee('Paciente Papel')->assertSee('310')->assertSee('Urgencias')
+            ->assertSee('no fue validada con Hospitalización');
     }
 
     public function test_validation_errors_reconstruct_multiple_rows_and_values(): void

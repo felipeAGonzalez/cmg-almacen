@@ -6,6 +6,7 @@ use App\Models\Cabinet;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
 use App\Models\Location;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -134,6 +135,55 @@ class InventoryStockStatusTest extends TestCase
         $this->assertCount(15, $items);
         $this->assertLessThanOrEqual(4, $queries);
         $this->assertTrue($items->every(fn (InventoryItem $item) => array_key_exists('usable_stock', $item->getAttributes())));
+    }
+
+    public function test_inventory_can_be_filtered_by_product_name_stock_status_and_expiration(): void
+    {
+        Carbon::setTestNow('2026-10-12 12:00:00');
+        $warehouse = Warehouse::factory()->create();
+        $criticalProduct = Product::factory()->create(['name' => 'Paracetamol especial']);
+        $healthyProduct = Product::factory()->create(['name' => 'Solución salina']);
+        $critical = InventoryItem::factory()->forWarehouse($warehouse)->for($criticalProduct)->create([
+            'minimum_stock' => 10,
+            'maximum_stock' => 20,
+        ]);
+        $healthy = InventoryItem::factory()->forWarehouse($warehouse)->for($healthyProduct)->create([
+            'minimum_stock' => 10,
+            'maximum_stock' => 20,
+        ]);
+        $this->batch($critical, '5', '2026-10-11');
+        $this->batch($healthy, '25', '2026-11-01');
+        $admin = User::factory()->administrator()->create();
+
+        $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'search' => 'Paracetamol']))
+            ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
+
+        $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'stock_status' => 'critical']))
+            ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
+
+        $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'expiration_status' => 'expired']))
+            ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
+
+        $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'expiration_from' => '2026-10-20', 'expiration_to' => '2026-11-02']))
+            ->assertOk()->assertSee('Solución salina')->assertDontSee('Paracetamol especial');
+    }
+
+    public function test_inventory_overview_is_scoped_to_manager_warehouses(): void
+    {
+        $manager = User::factory()->warehouseManager()->create();
+        $assigned = Warehouse::factory()->create(['name' => 'Almacén permitido']);
+        $foreign = Warehouse::factory()->create(['name' => 'Almacén ajeno']);
+        $manager->warehouses()->attach($assigned);
+        $assignedCabinet = Cabinet::factory()->for($assigned)->create(['name' => 'Gabinete permitido']);
+        InventoryItem::factory()->forWarehouse($assigned)->for(Product::factory()->create(['name' => 'Producto permitido']))->create();
+        InventoryItem::factory()->forCabinet($assignedCabinet)->for(Product::factory()->create(['name' => 'Producto de gabinete']))->create();
+        InventoryItem::factory()->forWarehouse($foreign)->for(Product::factory()->create(['name' => 'Producto oculto']))->create();
+
+        $this->actingAs($manager)->get(route('inventory.index'))
+            ->assertOk()->assertSee('Producto permitido')->assertSee('Producto de gabinete')
+            ->assertSee('Gabinete permitido')->assertDontSee('Producto oculto');
+
+        $this->actingAs(User::factory()->nurse()->create())->get(route('inventory.index'))->assertForbidden();
     }
 
     private function assertStatus(string $stock, string $minimum, string $maximum, string $expected): void

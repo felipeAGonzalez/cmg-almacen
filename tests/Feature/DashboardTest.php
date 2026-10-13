@@ -60,7 +60,9 @@ class DashboardTest extends TestCase
 
         $response = $this->actingAs(User::factory()->administrator()->create())->get(route('home'));
         $response->assertOk()->assertSeeInOrder(['1', 'Stock crítico'])->assertSeeInOrder(['1', 'Stock bajo'])
-            ->assertSeeInOrder(['1', 'Lotes vencidos con existencia']);
+            ->assertSeeInOrder(['1', 'Lotes vencidos con existencia'])
+            ->assertSee(route('inventory.index', ['stock_status' => 'critical']), false)
+            ->assertSee(route('inventory.index', ['expiration_status' => 'expired']), false);
     }
 
     public function test_manager_only_sees_assigned_warehouse_counts_and_attention_vouchers(): void

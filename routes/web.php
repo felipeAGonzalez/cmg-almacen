@@ -15,6 +15,7 @@ use App\Http\Controllers\HospitalNurseOptionsController;
 use App\Http\Controllers\InventoryAdjustmentController;
 use App\Http\Controllers\InventoryKardexController;
 use App\Http\Controllers\InventoryOutboundController;
+use App\Http\Controllers\InventoryOverviewController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\LocationController;
 use App\Http\Controllers\NotificationController;
@@ -44,6 +45,7 @@ Route::get('/auth/hospital/delegated', [HospitalDelegatedAuthController::class, 
 
 Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::get('/home', DashboardController::class)->name('home');
+    Route::get('/inventory', InventoryOverviewController::class)->name('inventory.index');
 
     Route::get('/nursing/hospital-context', [HospitalDelegatedAuthController::class, 'context'])
         ->middleware('role:nurse')

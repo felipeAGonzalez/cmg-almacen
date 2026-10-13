@@ -84,6 +84,54 @@ class InventoryOutboundManagementTest extends TestCase
         $this->assertNull(InventoryOutbound::latest('id')->firstOrFail()->notes);
     }
 
+    public function test_patient_care_outbound_requires_and_preserves_manual_patient_context(): void
+    {
+        [$warehouse, $item] = $this->context();
+        $batch = $this->batch($warehouse, $item, '5');
+        $user = User::factory()->warehouseManager()->create();
+        $user->warehouses()->attach($warehouse);
+        $payload = $this->payload($item, '2.125', InventoryOutboundReason::PATIENT_CARE->value);
+
+        $this->actingAs($user)->post(route('warehouses.outbounds.store', $warehouse), $payload)
+            ->assertSessionHasErrors('patient_name');
+
+        $payload += [
+            'patient_name' => '  Paciente Manual  ',
+            'room_number' => '  204 B  ',
+            'requesting_area' => '  Enfermería  ',
+        ];
+        $this->post(route('warehouses.outbounds.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::firstOrFail();
+        $this->assertSame(InventoryOutboundReason::PATIENT_CARE, $outbound->reason);
+        $this->assertSame('Paciente Manual', $outbound->patient_name);
+        $this->assertSame('204 B', $outbound->room_number);
+        $this->assertSame('Enfermería', $outbound->requesting_area);
+        $this->assertSame('2.875', $batch->fresh()->available_quantity);
+    }
+
+    public function test_non_patient_outbound_discards_manipulated_patient_context(): void
+    {
+        [$warehouse, $item] = $this->context();
+        $this->batch($warehouse, $item, '5');
+        $payload = $this->payload($item);
+        $payload += [
+            'patient_name' => 'No debe persistirse',
+            'room_number' => '99',
+            'requesting_area' => 'Área',
+        ];
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.outbounds.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::firstOrFail();
+        $this->assertNull($outbound->patient_name);
+        $this->assertNull($outbound->room_number);
+        $this->assertNull($outbound->requesting_area);
+    }
+
     public function test_only_main_inventory_items_from_route_warehouse_are_accepted(): void
     {
         [$warehouse, $item] = $this->context();

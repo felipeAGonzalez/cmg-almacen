@@ -52,7 +52,10 @@ class InventoryOutboundController extends Controller
 
             $outbound = $warehouse->inventoryOutbounds()->create([
                 'reason' => $data['reason'],
-                'notes' => $data['notes'],
+                'patient_name' => $data['patient_name'] ?? null,
+                'room_number' => $data['room_number'] ?? null,
+                'requesting_area' => $data['requesting_area'] ?? null,
+                'notes' => $data['notes'] ?? null,
                 'processed_by' => $request->user()->id,
                 'processed_at' => now(),
                 'source_type' => InventoryOutbound::SOURCE_MANUAL,

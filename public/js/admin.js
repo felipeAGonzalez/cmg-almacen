@@ -509,11 +509,23 @@ document.addEventListener('DOMContentLoaded', function () {
     const list = section.querySelector('[data-outbound-items-list]');
     const template = document.querySelector('[data-outbound-item-template]');
     const addButton = section.querySelector('[data-add-outbound-item]');
+    const reason = form.querySelector('[data-outbound-reason]');
+    const patientCareFields = form.querySelector('[data-patient-care-fields]');
+    const patientName = form.querySelector('[data-patient-care-required]');
     const options = JSON.parse(section.dataset.inventoryOptions || '[]');
     const byId = new Map(options.map(function (item) { return [String(item.id), item]; }));
     const formatQuantity = function (value) {
         return new Intl.NumberFormat('es-MX', { maximumFractionDigits: 3 }).format(Number.parseFloat(value) || 0);
     };
+
+    function updatePatientCareFields() {
+        if (!reason || !patientCareFields || !patientName) return;
+
+        const isPatientCare = reason.value === form.dataset.patientCareReason;
+        patientCareFields.classList.toggle('d-none', !isPatientCare);
+        patientName.required = isPatientCare;
+        patientCareFields.setAttribute('aria-hidden', isPatientCare ? 'false' : 'true');
+    }
 
     function selectedIds(exceptRow) {
         return new Set(Array.from(list.querySelectorAll('[data-outbound-item]'))
@@ -555,6 +567,8 @@ document.addEventListener('DOMContentLoaded', function () {
         });
     }
 
+    if (reason) reason.addEventListener('change', updatePatientCareFields);
+    updatePatientCareFields();
     list.querySelectorAll('[data-outbound-item]').forEach(initializeRow);
     reindexRows(); updateRows();
     addButton.addEventListener('click', function () {

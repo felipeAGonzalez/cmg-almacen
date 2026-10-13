@@ -197,8 +197,8 @@ class InventoryKardexService
                 'users.name as actor_name',
                 'users.last_name_one as actor_last_name',
                 'inventory_outbounds.reason as detail',
-                DB::raw('null as patient_name'),
-                DB::raw('null as room_number'),
+                'inventory_outbounds.patient_name',
+                'inventory_outbounds.room_number',
                 'inventory_outbound_allocations.id as sort_id',
             ]);
     }

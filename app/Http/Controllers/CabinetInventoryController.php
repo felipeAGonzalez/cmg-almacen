@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\InventoryFilterRequest;
 use App\Http\Requests\StoreInventoryItemRequest;
 use App\Http\Requests\UpdateInventoryItemRequest;
 use App\Models\Cabinet;
@@ -13,15 +14,18 @@ use Illuminate\View\View;
 
 class CabinetInventoryController extends Controller
 {
-    public function index(Warehouse $warehouse, Cabinet $cabinet): View
+    public function index(InventoryFilterRequest $request, Warehouse $warehouse, Cabinet $cabinet): View
     {
+        $filters = $request->validated();
         $inventoryItems = $cabinet->inventoryItems()
+            ->filterInventory($filters)
             ->withStockTotals()
             ->with('product.unit')
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('inventory.index', compact('warehouse', 'cabinet', 'inventoryItems'));
+        return view('inventory.index', compact('warehouse', 'cabinet', 'inventoryItems', 'filters'));
     }
 
     public function create(Warehouse $warehouse, Cabinet $cabinet): View

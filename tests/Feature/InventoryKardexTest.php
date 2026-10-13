@@ -66,6 +66,30 @@ class InventoryKardexTest extends TestCase
         $this->assertSame('7.000', $rows->reduce(fn (string $sum, $row) => bcadd($sum, $row->quantity, 3), '0.000'));
     }
 
+    public function test_manual_patient_voucher_explains_the_outbound_destination_without_duplicate_movements(): void
+    {
+        [$warehouse, , $item, , $user] = $this->context();
+        $this->entryBatch($warehouse, $item, '5');
+        $this->actingAs($user)->post(route('warehouses.outbounds.store', $warehouse), [
+            'reason' => InventoryOutboundReason::PATIENT_CARE->value,
+            'patient_name' => 'Paciente Kardex',
+            'room_number' => '105',
+            'requesting_area' => 'Hospitalización',
+            'notes' => null,
+            'items' => [['inventory_item_id' => $item->id, 'quantity' => '2']],
+        ])->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::query()->latest('id')->firstOrFail();
+        $movements = app(InventoryKardexService::class)->forWarehouse($warehouse, ['movement_type' => 'manual_outbound']);
+
+        $this->assertSame(1, $movements->total());
+        $this->assertSame('Paciente Kardex', $movements->first()->patient_name);
+        $this->assertSame('105', $movements->first()->room_number);
+        $this->actingAs($user)->get(route('warehouses.kardex.index', $warehouse))
+            ->assertOk()->assertSee('Vale manual · Paciente: Paciente Kardex · Habitación 105')
+            ->assertSee('Vale manual #'.$outbound->id);
+    }
+
     public function test_cabinet_kardex_contains_only_transfer_in_with_derived_and_source_lots(): void
     {
         [$warehouse, $cabinet, $source, $destination, $user] = $this->context();

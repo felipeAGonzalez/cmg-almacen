@@ -4,6 +4,7 @@ namespace App\Enums;
 
 enum InventoryOutboundReason: string
 {
+    case PATIENT_CARE = 'patient_care';
     case INTERNAL_CONSUMPTION = 'internal_consumption';
     case SHRINKAGE = 'shrinkage';
     case DAMAGE = 'damage';
@@ -14,6 +15,7 @@ enum InventoryOutboundReason: string
     public function label(): string
     {
         return match ($this) {
+            self::PATIENT_CARE => 'Atención a paciente',
             self::INTERNAL_CONSUMPTION => 'Consumo interno',
             self::SHRINKAGE => 'Merma',
             self::DAMAGE => 'Daño',
