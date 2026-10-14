@@ -2,6 +2,7 @@
 
 namespace App\Http\Controllers;
 
+use App\Http\Requests\IndexProductRequest;
 use App\Http\Requests\StoreProductRequest;
 use App\Http\Requests\UpdateProductRequest;
 use App\Models\Brand;
@@ -14,14 +15,21 @@ use Illuminate\View\View;
 
 class ProductController extends Controller
 {
-    public function index(): View
+    public function index(IndexProductRequest $request): View
     {
+        $search = $request->validated('search');
         $products = Product::query()
             ->with(['unit', 'category', 'brand'])
+            ->when($search, fn ($query) => $query->where(function ($searchQuery) use ($search): void {
+                $searchQuery->where('name', 'like', "%{$search}%")
+                    ->orWhere('code', 'like', "%{$search}%")
+                    ->orWhere('barcode', 'like', "%{$search}%");
+            }))
             ->orderBy('name')
-            ->paginate(15);
+            ->paginate(15)
+            ->withQueryString();
 
-        return view('products.index', compact('products'));
+        return view('products.index', compact('products', 'search'));
     }
 
     public function create(): View

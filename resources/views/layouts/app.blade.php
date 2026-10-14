@@ -110,6 +110,11 @@
                         <i class="bi bi-clipboard-data" aria-hidden="true"></i>
                         <span>Existencias</span>
                     </a>
+                    <span class="admin-nav-label mt-4">CATÁLOGO</span>
+                    <a href="{{ route('products.index') }}" class="admin-nav-link {{ request()->routeIs('products.*') ? 'active' : '' }}">
+                        <i class="bi bi-box-seam" aria-hidden="true"></i>
+                        <span>Productos</span>
+                    </a>
                     @php($assignedWarehouses = Auth::user()->warehouses()->orderBy('name')->get())
                     @if ($assignedWarehouses->isNotEmpty())
                         <span class="admin-nav-label mt-4">MIS ALMACENES</span>

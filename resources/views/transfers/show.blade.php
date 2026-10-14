@@ -28,7 +28,7 @@
                     @foreach($item->allocations as $allocation)<tr>
                         <td><code class="entry-lot">{{ $allocation->sourceBatch->internal_lot }}</code></td>
                         <td>{{ $allocation->sourceBatch->manufacturer_lot ?: 'No indicado' }}</td>
-                        <td class="text-nowrap">{{ $allocation->sourceBatch->expiration_date?->format('d/m/Y') ?: 'No aplica' }}</td>
+                        <td class="text-nowrap">{{ $allocation->sourceBatch->expiration_date?->format('d/m/Y') ?: 'Sin caducidad' }}</td>
                         <td>{{ rtrim(rtrim($allocation->quantity, '0'), '.') }}</td>
                         <td><code class="entry-lot">{{ $allocation->destinationBatch->internal_lot }}</code></td>
                     </tr>@endforeach

@@ -5,6 +5,20 @@
         <div><h2>Productos</h2><p>Administra el catálogo general de productos.</p></div>
         <a href="{{ route('products.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Nuevo producto</a>
     </div>
+    <form method="GET" action="{{ route('products.index') }}" class="admin-card mb-4" role="search">
+        <div class="p-3 p-lg-4">
+            <label for="product-search" class="form-label fw-semibold">Buscar productos</label>
+            <div class="row g-2">
+                <div class="col-12 col-lg-8">
+                    <input id="product-search" name="search" type="search" maxlength="120" value="{{ $search ?? '' }}" class="form-control" placeholder="Nombre, código interno o código de barras" autocomplete="off">
+                </div>
+                <div class="col-12 col-lg-auto d-flex gap-2">
+                    <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
+                    @if ($search)<a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar</a>@endif
+                </div>
+            </div>
+        </div>
+    </form>
     <section class="admin-card overflow-hidden" aria-labelledby="product-list-title">
         <div class="admin-card-header">
             <h3 class="h6 fw-bold mb-1" id="product-list-title">Productos registrados</h3>
@@ -13,9 +27,13 @@
         @if ($products->isEmpty())
             <div class="empty-state">
                 <span class="empty-state-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
-                <h3 class="h5">No hay productos registrados.</h3>
-                <p class="text-body-secondary mb-4">Crea el primer producto del catálogo general.</p>
-                <a href="{{ route('products.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Crear producto</a>
+                <h3 class="h5">{{ $search ? 'No se encontraron productos.' : 'No hay productos registrados.' }}</h3>
+                <p class="text-body-secondary mb-4">{{ $search ? 'Prueba con otro nombre, código interno o código de barras.' : 'Crea el primer producto del catálogo general.' }}</p>
+                @if ($search)
+                    <a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar búsqueda</a>
+                @else
+                    <a href="{{ route('products.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Crear producto</a>
+                @endif
             </div>
         @else
             <div class="table-responsive">

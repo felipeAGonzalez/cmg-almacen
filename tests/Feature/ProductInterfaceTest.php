@@ -30,9 +30,21 @@ class ProductInterfaceTest extends TestCase
         }
     }
 
-    public function test_non_administrative_roles_do_not_see_product_navigation(): void
+    public function test_warehouse_manager_sees_only_product_catalog_navigation(): void
     {
-        foreach ([UserRole::WAREHOUSE_MANAGER, UserRole::NURSE, UserRole::LEGACY_USER] as $role) {
+        $this->actingAs(User::factory()->create(['role' => UserRole::WAREHOUSE_MANAGER]))
+            ->get(route('products.index'))
+            ->assertOk()
+            ->assertSee('CATÁLOGO')
+            ->assertSee('href="'.route('products.index').'" class="admin-nav-link active"', false)
+            ->assertDontSee('href="'.route('units.index').'"', false)
+            ->assertDontSee('href="'.route('categories.index').'"', false)
+            ->assertDontSee('href="'.route('brands.index').'"', false);
+    }
+
+    public function test_nurse_and_legacy_user_do_not_see_product_navigation(): void
+    {
+        foreach ([UserRole::NURSE, UserRole::LEGACY_USER] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]))
                 ->get(route('home'))
                 ->assertOk()
@@ -47,6 +59,8 @@ class ProductInterfaceTest extends TestCase
         $this->actingAs($administrator)
             ->get(route('products.index'))
             ->assertOk()
+            ->assertSee('Buscar productos')
+            ->assertSee('Nombre, código interno o código de barras')
             ->assertSee('No hay productos registrados.')
             ->assertSee('Crear producto');
 

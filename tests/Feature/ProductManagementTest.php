@@ -15,9 +15,9 @@ class ProductManagementTest extends TestCase
 {
     use RefreshDatabase;
 
-    public function test_administrator_and_root_can_access_product_index(): void
+    public function test_administrator_root_and_warehouse_manager_can_access_product_index(): void
     {
-        foreach ([UserRole::ADMINISTRATOR, UserRole::ROOT] as $role) {
+        foreach ([UserRole::ADMINISTRATOR, UserRole::ROOT, UserRole::WAREHOUSE_MANAGER] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]))
                 ->get(route('products.index'))
                 ->assertOk()
@@ -25,9 +25,9 @@ class ProductManagementTest extends TestCase
         }
     }
 
-    public function test_non_administrative_roles_cannot_access_product_index(): void
+    public function test_nurse_and_legacy_user_cannot_access_product_index(): void
     {
-        foreach ([UserRole::WAREHOUSE_MANAGER, UserRole::NURSE, UserRole::LEGACY_USER] as $role) {
+        foreach ([UserRole::NURSE, UserRole::LEGACY_USER] as $role) {
             $this->actingAs(User::factory()->create(['role' => $role]))
                 ->get(route('products.index'))
                 ->assertForbidden();
@@ -70,6 +70,29 @@ class ProductManagementTest extends TestCase
         $this->actingAs(User::factory()->create(['role' => UserRole::ROOT]))
             ->post(route('products.store'), $this->payload())
             ->assertSessionHasNoErrors();
+    }
+
+    public function test_warehouse_manager_can_manage_products_using_existing_catalogs(): void
+    {
+        $manager = User::factory()->create(['role' => UserRole::WAREHOUSE_MANAGER]);
+
+        $this->actingAs($manager)
+            ->post(route('products.store'), $this->payload(['name' => 'Producto del almacenista']))
+            ->assertRedirect(route('products.index'))
+            ->assertSessionHasNoErrors();
+
+        $product = Product::query()->where('name', 'Producto del almacenista')->firstOrFail();
+
+        $this->put(route('products.update', $product), $this->payload([
+            'name' => 'Producto actualizado por almacenista',
+            'code' => $product->code,
+        ]))->assertRedirect(route('products.index'))
+            ->assertSessionHasNoErrors();
+
+        $this->delete(route('products.destroy', $product))
+            ->assertRedirect(route('products.index'));
+
+        $this->assertModelMissing($product);
     }
 
     public function test_name_and_catalogs_are_required(): void
@@ -210,6 +233,21 @@ class ProductManagementTest extends TestCase
                     && $items->every(fn (Product $product): bool => $product->relationLoaded('unit')
                         && $product->relationLoaded('category') && $product->relationLoaded('brand'));
             });
+    }
+
+    public function test_product_index_can_search_by_name_code_and_barcode(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        Product::factory()->create(['name' => 'Paracetamol tabletas', 'code' => 'MED-PAR-01', 'barcode' => '750000000101']);
+        Product::factory()->create(['name' => 'Jeringa estéril', 'code' => 'MAT-JER-02', 'barcode' => '750000000202']);
+
+        foreach (['Paracetamol', 'MED-PAR-01', '750000000101'] as $search) {
+            $this->actingAs($administrator)->get(route('products.index', ['search' => $search]))
+                ->assertOk()
+                ->assertSee('Paracetamol tabletas')
+                ->assertDontSee('Jeringa estéril')
+                ->assertSee('value="'.$search.'"', false);
+        }
     }
 
     public function test_create_and_edit_receive_alphabetically_ordered_catalogs(): void

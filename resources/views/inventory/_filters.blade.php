@@ -16,6 +16,7 @@
                     <option value="critical" @selected(($filters['stock_status'] ?? '') === 'critical')>Crítico</option>
                     <option value="low" @selected(($filters['stock_status'] ?? '') === 'low')>Bajo</option>
                     <option value="healthy" @selected(($filters['stock_status'] ?? '') === 'healthy')>Correcto</option>
+                    <option value="without_expiration" @selected(($filters['stock_status'] ?? '') === 'without_expiration')>Sin caducidad</option>
                 </select>
             </div>
             <div class="col-12 col-sm-6 col-lg-3">

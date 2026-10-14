@@ -24,6 +24,8 @@ class InventoryItem extends Model
 
     public const STOCK_STATUS_HEALTHY = 'healthy';
 
+    public const STOCK_STATUS_WITHOUT_EXPIRATION = 'without_expiration';
+
     protected $fillable = [
         'product_id',
         'location_id',
@@ -75,11 +77,18 @@ class InventoryItem extends Model
         $usableStock = 'COALESCE((SELECT SUM(inventory_batches.available_quantity) FROM inventory_batches WHERE inventory_batches.inventory_item_id = inventory_items.id AND inventory_batches.available_quantity > 0 AND (inventory_batches.expiration_date IS NULL OR DATE(inventory_batches.expiration_date) >= ?)), 0)';
 
         match ($filters['stock_status'] ?? null) {
-            self::STOCK_STATUS_CRITICAL => $query->whereRaw("{$usableStock} <= inventory_items.minimum_stock", [$today]),
+            self::STOCK_STATUS_CRITICAL => $query
+                ->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', true))
+                ->whereRaw("{$usableStock} <= inventory_items.minimum_stock", [$today]),
             self::STOCK_STATUS_LOW => $query
+                ->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', true))
                 ->whereRaw("{$usableStock} > inventory_items.minimum_stock", [$today])
                 ->whereRaw("{$usableStock} < inventory_items.maximum_stock", [$today]),
-            self::STOCK_STATUS_HEALTHY => $query->whereRaw("{$usableStock} >= inventory_items.maximum_stock", [$today]),
+            self::STOCK_STATUS_HEALTHY => $query
+                ->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', true))
+                ->whereRaw("{$usableStock} >= inventory_items.maximum_stock", [$today]),
+            self::STOCK_STATUS_WITHOUT_EXPIRATION => $query
+                ->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', false)),
             default => null,
         };
 
@@ -87,12 +96,14 @@ class InventoryItem extends Model
         $expirationFrom = $filters['expiration_from'] ?? null;
         $expirationTo = $filters['expiration_to'] ?? null;
 
-        if ($expirationStatus || $expirationFrom || $expirationTo) {
+        if ($expirationStatus === 'without_expiration') {
+            $query->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', false));
+        } elseif ($expirationStatus || $expirationFrom || $expirationTo) {
+            $query->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', true));
             $query->whereHas('batches', function (Builder $batches) use ($expirationStatus, $expirationFrom, $expirationTo, $today): void {
                 $batches->where('available_quantity', '>', 0)
                     ->when($expirationStatus === 'expired', fn (Builder $batch) => $batch->whereDate('expiration_date', '<', $today))
                     ->when($expirationStatus === 'valid', fn (Builder $batch) => $batch->whereDate('expiration_date', '>=', $today))
-                    ->when($expirationStatus === 'without_expiration', fn (Builder $batch) => $batch->whereNull('expiration_date'))
                     ->when($expirationFrom, fn (Builder $batch) => $batch->whereDate('expiration_date', '>=', $expirationFrom))
                     ->when($expirationTo, fn (Builder $batch) => $batch->whereDate('expiration_date', '<=', $expirationTo));
             });
@@ -118,6 +129,10 @@ class InventoryItem extends Model
 
     public function stockStatus(): string
     {
+        if (! $this->product->requires_expiration) {
+            return self::STOCK_STATUS_WITHOUT_EXPIRATION;
+        }
+
         if (bccomp($this->usableStock(), $this->minimum_stock, 3) <= 0) {
             return self::STOCK_STATUS_CRITICAL;
         }
@@ -135,6 +150,7 @@ class InventoryItem extends Model
             self::STOCK_STATUS_CRITICAL => 'Crítico',
             self::STOCK_STATUS_LOW => 'Bajo',
             self::STOCK_STATUS_HEALTHY => 'Correcto',
+            self::STOCK_STATUS_WITHOUT_EXPIRATION => 'Sin caducidad',
         };
     }
 
@@ -144,6 +160,7 @@ class InventoryItem extends Model
             self::STOCK_STATUS_CRITICAL => 'text-bg-danger',
             self::STOCK_STATUS_LOW => 'text-bg-warning',
             self::STOCK_STATUS_HEALTHY => 'text-bg-success',
+            self::STOCK_STATUS_WITHOUT_EXPIRATION => 'text-bg-light border',
         };
     }
 

@@ -166,7 +166,7 @@ class EntryInterfaceTest extends TestCase
             ->assertOk()
             ->assertSee('Inicio')
             ->assertSee('No indicado')
-            ->assertSee('No aplica')
+            ->assertSee('Sin caducidad')
             ->assertDontSee('href="'.route('warehouses.index').'"', false);
     }
 

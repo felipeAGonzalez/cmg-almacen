@@ -17,7 +17,7 @@ class InventoryFilterRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:120'],
-            'stock_status' => ['nullable', Rule::in(['critical', 'low', 'healthy'])],
+            'stock_status' => ['nullable', Rule::in(['critical', 'low', 'healthy', 'without_expiration'])],
             'expiration_status' => ['nullable', Rule::in(['expired', 'valid', 'without_expiration'])],
             'expiration_from' => ['nullable', 'date_format:Y-m-d'],
             'expiration_to' => ['nullable', 'date_format:Y-m-d', 'after_or_equal:expiration_from'],

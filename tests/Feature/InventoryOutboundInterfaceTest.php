@@ -141,7 +141,7 @@ class InventoryOutboundInterfaceTest extends TestCase
         $this->actingAs($user)->get(route('warehouses.outbounds.show', [$warehouse, $outbound]))->assertOk()
             ->assertSee($item->product->name)->assertSee($item->product->unit->name)
             ->assertSee($first->internal_lot)->assertSee($second->internal_lot)->assertSee('FAB-01')
-            ->assertSee('No indicado')->assertSee('01/01/2027')->assertSee('No aplica')
+            ->assertSee('No indicado')->assertSee('01/01/2027')->assertSee('Sin caducidad')
             ->assertSee('Cantidad retirada: 4')->assertDontSee('Costo')->assertDontSee('Editar')->assertDontSee('Eliminar');
     }
 

@@ -76,6 +76,17 @@ class InventoryStockStatusTest extends TestCase
         $this->assertStatus('0', '0', '50', InventoryItem::STOCK_STATUS_CRITICAL);
     }
 
+    public function test_product_without_expiration_is_not_critical_or_expired(): void
+    {
+        $item = $this->warehouseItem('10', '50', false);
+        $this->batch($item, '0.001');
+        $item = InventoryItem::query()->with(['product'])->withStockTotals()->findOrFail($item->id);
+
+        $this->assertSame(InventoryItem::STOCK_STATUS_WITHOUT_EXPIRATION, $item->stockStatus());
+        $this->assertSame('Sin caducidad', $item->stockStatusLabel());
+        $this->assertSame('0.000', $item->expiredStock());
+    }
+
     public function test_warehouse_inventory_renders_usable_expired_physical_location_and_status(): void
     {
         Carbon::setTestNow('2026-08-31 12:00:00');
@@ -103,7 +114,8 @@ class InventoryStockStatusTest extends TestCase
     {
         $warehouse = Warehouse::factory()->create();
         $cabinet = Cabinet::factory()->for($warehouse)->create();
-        $item = InventoryItem::factory()->forCabinet($cabinet)->create([
+        $product = Product::factory()->create(['requires_expiration' => true]);
+        $item = InventoryItem::factory()->forCabinet($cabinet)->for($product)->create([
             'minimum_stock' => 10,
             'maximum_stock' => 50,
         ]);
@@ -141,8 +153,8 @@ class InventoryStockStatusTest extends TestCase
     {
         Carbon::setTestNow('2026-10-12 12:00:00');
         $warehouse = Warehouse::factory()->create();
-        $criticalProduct = Product::factory()->create(['name' => 'Paracetamol especial']);
-        $healthyProduct = Product::factory()->create(['name' => 'Solución salina']);
+        $criticalProduct = Product::factory()->create(['name' => 'Paracetamol especial', 'requires_expiration' => true]);
+        $healthyProduct = Product::factory()->create(['name' => 'Solución salina', 'requires_expiration' => true]);
         $critical = InventoryItem::factory()->forWarehouse($warehouse)->for($criticalProduct)->create([
             'minimum_stock' => 10,
             'maximum_stock' => 20,
@@ -197,11 +209,12 @@ class InventoryStockStatusTest extends TestCase
         $this->assertSame($expected, $item->stockStatus());
     }
 
-    private function warehouseItem(string $minimum = '10', string $maximum = '50'): InventoryItem
+    private function warehouseItem(string $minimum = '10', string $maximum = '50', bool $requiresExpiration = true): InventoryItem
     {
         $warehouse = Warehouse::factory()->create();
+        $product = Product::factory()->create(['requires_expiration' => $requiresExpiration]);
 
-        return InventoryItem::factory()->forWarehouse($warehouse)->create([
+        return InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create([
             'minimum_stock' => $minimum,
             'maximum_stock' => $maximum,
         ]);

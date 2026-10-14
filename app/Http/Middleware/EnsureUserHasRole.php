@@ -9,16 +9,21 @@ use Symfony\Component\HttpFoundation\Response;
 
 class EnsureUserHasRole
 {
-    public function handle(Request $request, Closure $next, string $role): Response
+    public function handle(Request $request, Closure $next, string ...$roles): Response
     {
         $user = $request->user();
-        $requiredRole = $role === 'admin'
-            ? UserRole::ADMINISTRATOR
-            : UserRole::tryFrom($role);
+        $requiredRoles = array_map(
+            fn (string $role): ?UserRole => $role === 'admin'
+                ? UserRole::ADMINISTRATOR
+                : UserRole::tryFrom($role),
+            $roles,
+        );
 
-        $hasRole = $requiredRole === UserRole::ADMINISTRATOR
-            ? $user?->isAdmin() === true
-            : $user?->role === $requiredRole;
+        $hasRole = collect($requiredRoles)->contains(
+            fn (?UserRole $requiredRole): bool => $requiredRole === UserRole::ADMINISTRATOR
+                ? $user?->isAdmin() === true
+                : $user?->role === $requiredRole,
+        );
 
         if (! $hasRole) {
             abort(403);

@@ -121,7 +121,7 @@ class InventoryTransferInterfaceTest extends TestCase
         $response = $this->actingAs($user)->get(route('warehouses.transfers.show', [$warehouse, $transfer]));
         $response->assertOk()->assertSee($source->product->name)->assertSee($source->product->unit->name)
             ->assertSee($first->internal_lot)->assertSee($second->internal_lot)->assertSee('FAB-01')
-            ->assertSee('No indicado')->assertSee('01/01/2027')->assertSee('No aplica')
+            ->assertSee('No indicado')->assertSee('01/01/2027')->assertSee('Sin caducidad')
             ->assertSee('Cantidad transferida: 4')->assertSee('Lote en gabinete');
         foreach ($allocations as $allocation) {
             $response->assertSee($allocation->destinationBatch->internal_lot);

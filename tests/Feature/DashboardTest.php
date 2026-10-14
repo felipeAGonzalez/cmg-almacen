@@ -11,6 +11,7 @@ use App\Models\Cabinet;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
 use App\Models\NursingVoucher;
+use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Foundation\Testing\RefreshDatabase;
@@ -51,12 +52,14 @@ class DashboardTest extends TestCase
     {
         Carbon::setTestNow('2026-09-03 12:00:00');
         $warehouse = Warehouse::factory()->create();
-        $critical = InventoryItem::factory()->forWarehouse($warehouse)->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
-        $low = InventoryItem::factory()->forWarehouse($warehouse)->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
+        $critical = InventoryItem::factory()->forWarehouse($warehouse)->for(Product::factory()->create(['requires_expiration' => true]))->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
+        $low = InventoryItem::factory()->forWarehouse($warehouse)->for(Product::factory()->create(['requires_expiration' => true]))->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
+        $withoutExpiration = InventoryItem::factory()->forWarehouse($warehouse)->for(Product::factory()->create(['requires_expiration' => false]))->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
         $this->batch($critical, '8', '2026-09-04');
         $this->batch($critical, '4', '2026-09-02');
-        $this->batch($low, '15', null);
+        $this->batch($low, '15', '2026-09-10');
         $this->batch($low, '0', '2026-09-01');
+        $this->batch($withoutExpiration, '1', null);
 
         $response = $this->actingAs(User::factory()->administrator()->create())->get(route('home'));
         $response->assertOk()->assertSeeInOrder(['1', 'Stock crítico'])->assertSeeInOrder(['1', 'Stock bajo'])

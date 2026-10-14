@@ -103,7 +103,7 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
 
     Route::resource('products', ProductController::class)
         ->except('show')
-        ->middleware('role:administrator');
+        ->middleware('role:administrator,warehouse_manager');
 
     Route::resource('units', UnitController::class)
         ->except('show')

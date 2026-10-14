@@ -105,10 +105,13 @@ class DashboardService
     /** @return array<string, int> */
     private function stockCounts(Builder $inventory): array
     {
+        $expirationControlledInventory = fn (): Builder => (clone $inventory)
+            ->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', true));
+
         return [
-            'critical_stock' => $this->withStockCondition(clone $inventory, '<=')->count(),
-            'low_stock' => $this->withStockCondition(clone $inventory, '>')->whereRaw($this->usableStockSql().' < inventory_items.maximum_stock', [today()->toDateString()])->count(),
-            'expired_batches' => InventoryBatch::query()->whereIn('inventory_item_id', (clone $inventory)->select('inventory_items.id'))
+            'critical_stock' => $this->withStockCondition($expirationControlledInventory(), '<=')->count(),
+            'low_stock' => $this->withStockCondition($expirationControlledInventory(), '>')->whereRaw($this->usableStockSql().' < inventory_items.maximum_stock', [today()->toDateString()])->count(),
+            'expired_batches' => InventoryBatch::query()->whereIn('inventory_item_id', $expirationControlledInventory()->select('inventory_items.id'))
                 ->where('available_quantity', '>', 0)->whereDate('expiration_date', '<', today())->count(),
         ];
     }

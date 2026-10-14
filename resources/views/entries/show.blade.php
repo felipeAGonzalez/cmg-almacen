@@ -46,7 +46,7 @@
                         <td class="fw-semibold text-nowrap">${{ number_format((float) $item->subtotal, 2, '.', ',') }}</td>
                         <td><code class="entry-lot">{{ $item->batch->internal_lot }}</code></td>
                         <td>{{ $item->batch->manufacturer_lot ?: 'No indicado' }}</td>
-                        <td class="text-nowrap">{{ $item->batch->expiration_date?->format('d/m/Y') ?: 'No aplica' }}</td>
+                        <td class="text-nowrap">{{ $item->batch->expiration_date?->format('d/m/Y') ?: 'Sin caducidad' }}</td>
                     </tr>
                 @endforeach
             </tbody>
