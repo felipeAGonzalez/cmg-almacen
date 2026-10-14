@@ -11,6 +11,7 @@ use App\Models\Warehouse;
 use App\Services\InventoryBatchAllocator;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
+use Illuminate\Support\Carbon;
 use Illuminate\Support\Facades\DB;
 use Illuminate\View\View;
 
@@ -57,7 +58,9 @@ class InventoryOutboundController extends Controller
                 'requesting_area' => $data['requesting_area'] ?? null,
                 'notes' => $data['notes'] ?? null,
                 'processed_by' => $request->user()->id,
-                'processed_at' => now(),
+                'processed_at' => isset($data['processed_at'])
+                    ? Carbon::createFromFormat('Y-m-d\TH:i', $data['processed_at'], config('app.timezone'))
+                    : now(),
                 'source_type' => InventoryOutbound::SOURCE_MANUAL,
                 'source_id' => null,
             ]);

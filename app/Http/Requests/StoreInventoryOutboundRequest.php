@@ -21,6 +21,11 @@ class StoreInventoryOutboundRequest extends FormRequest
 
         return [
             'reason' => ['required', Rule::enum(InventoryOutboundReason::class)],
+            'processed_at' => [
+                'nullable',
+                'date_format:Y-m-d\TH:i',
+                'before_or_equal:'.now()->format('Y-m-d\TH:i'),
+            ],
             'patient_name' => [
                 Rule::requiredIf($this->input('reason') === InventoryOutboundReason::PATIENT_CARE->value),
                 'nullable',
@@ -46,6 +51,8 @@ class StoreInventoryOutboundRequest extends FormRequest
         return [
             'reason.required' => 'El motivo es obligatorio.',
             'reason.enum' => 'El motivo seleccionado no es válido.',
+            'processed_at.date_format' => 'La fecha y hora de salida no tiene un formato válido.',
+            'processed_at.before_or_equal' => 'La fecha y hora de salida no puede estar en el futuro.',
             'patient_name.required' => 'El nombre del paciente es obligatorio para registrar un vale manual.',
             'patient_name.max' => 'El nombre del paciente no debe exceder 255 caracteres.',
             'room_number.max' => 'La habitación no debe exceder 50 caracteres.',

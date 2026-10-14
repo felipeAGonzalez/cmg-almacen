@@ -84,6 +84,36 @@ class InventoryOutboundManagementTest extends TestCase
         $this->assertNull(InventoryOutbound::latest('id')->firstOrFail()->notes);
     }
 
+    public function test_outbound_accepts_a_past_effective_date_and_rejects_future_dates(): void
+    {
+        Carbon::setTestNow('2026-10-14 12:30:00');
+        [$warehouse, $item] = $this->context();
+        $batch = $this->batch($warehouse, $item, '5');
+        $user = User::factory()->administrator()->create();
+        $payload = $this->payload($item);
+        $payload['processed_at'] = '2026-10-10T08:15';
+
+        $this->actingAs($user)->post(route('warehouses.outbounds.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::firstOrFail();
+        $this->assertSame('2026-10-10 08:15:00', $outbound->processed_at->format('Y-m-d H:i:s'));
+        $this->assertSame('2026-10-14', $outbound->created_at->format('Y-m-d'));
+
+        [$otherWarehouse, $otherItem] = $this->context();
+        $otherBatch = $this->batch($otherWarehouse, $otherItem, '5');
+        $futurePayload = $this->payload($otherItem);
+        $futurePayload['processed_at'] = '2026-10-14T12:31';
+
+        $this->post(route('warehouses.outbounds.store', $otherWarehouse), $futurePayload)
+            ->assertSessionHasErrors([
+                'processed_at' => 'La fecha y hora de salida no puede estar en el futuro.',
+            ]);
+        $this->assertSame('5.000', $otherBatch->fresh()->available_quantity);
+        $this->assertDatabaseCount('inventory_outbounds', 1);
+        $this->assertSame('3.500', $batch->fresh()->available_quantity);
+    }
+
     public function test_patient_care_outbound_requires_and_preserves_manual_patient_context(): void
     {
         [$warehouse, $item] = $this->context();

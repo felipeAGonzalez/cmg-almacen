@@ -12,7 +12,7 @@
     <div class="admin-card-header"><h3 class="h6 fw-bold mb-0">Datos de la salida</h3></div>
     <div class="p-4">
         <div class="row g-3">
-            <div class="col-lg-5">
+            <div class="col-lg-6">
                 <label for="reason" class="form-label">Motivo <span class="text-danger">*</span></label>
                 <select id="reason" name="reason" class="form-select @error('reason') is-invalid @enderror" data-outbound-reason required>
                     <option value="">Selecciona un motivo</option>
@@ -20,7 +20,13 @@
                 </select>
                 @error('reason')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-lg-7">
+            <div class="col-lg-6">
+                <label for="processed_at" class="form-label">Fecha y hora de salida <span class="text-danger">*</span></label>
+                <input id="processed_at" name="processed_at" type="datetime-local" value="{{ old('processed_at', now()->format('Y-m-d\TH:i')) }}" max="{{ now()->format('Y-m-d\TH:i') }}" class="form-control @error('processed_at') is-invalid @enderror" required>
+                <div class="form-text">Puedes indicar una fecha anterior cuando captures un vale o una salida recibida en papel.</div>
+                @error('processed_at')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-12">
                 <label for="notes" class="form-label">Comentario <span class="text-body-secondary fw-normal">(Opcional)</span></label>
                 <textarea id="notes" name="notes" rows="2" maxlength="2000" class="form-control @error('notes') is-invalid @enderror" placeholder="Agrega información adicional sobre la salida si es necesario.">{{ old('notes') }}</textarea>
                 @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror

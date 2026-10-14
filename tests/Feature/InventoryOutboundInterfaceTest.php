@@ -69,7 +69,9 @@ class InventoryOutboundInterfaceTest extends TestCase
         $response = $this->actingAs($user)->get(route('warehouses.outbounds.create', $warehouse));
         $response->assertOk()->assertSee($item->product->name)->assertDontSee($other->product->name)
             ->assertDontSee($cabinetItem->product->name)->assertSee('usableStock')->assertSee('7.5')
-            ->assertSee('items[0][inventory_item_id]', false)->assertSee('items[0][quantity]', false);
+            ->assertSee('items[0][inventory_item_id]', false)->assertSee('items[0][quantity]', false)
+            ->assertSee('name="processed_at"', false)->assertSee('type="datetime-local"', false)
+            ->assertSee('Puedes indicar una fecha anterior');
         foreach (InventoryOutboundReason::cases() as $reason) {
             $response->assertSee($reason->label());
         }
