@@ -129,9 +129,49 @@
 @endif
 
 @if (isset($recentAdministrationVouchers))
-<section aria-labelledby="recent-administration"><h3 class="h5 mb-3" id="recent-administration">Actividad reciente de Administración</h3>
+<section class="mb-4" aria-labelledby="recent-administration"><h3 class="h5 mb-3" id="recent-administration">Actividad reciente de Administración</h3>
 <div class="card border-0 shadow-sm"><div class="table-responsive"><table class="table align-middle mb-0"><thead><tr><th>Folio</th><th>Almacén</th><th>Gabinete</th><th>Estado</th><th>Fecha</th><th></th></tr></thead><tbody>
 @forelse ($recentAdministrationVouchers as $voucher)<tr><td>#{{ $voucher->id }}</td><td>{{ $voucher->warehouse->name }}</td><td>{{ $voucher->cabinet->name }}</td><td><span class="badge {{ $voucher->status->badgeClass() }}">{{ $voucher->status->label() }}</span></td><td>{{ $voucher->requested_at->format('d/m/Y H:i') }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ route('administration-vouchers.show', $voucher) }}">Ver</a></td></tr>@empty<tr><td colspan="6" class="text-center text-body-secondary py-4">No hay vales recientes.</td></tr>@endforelse
 </tbody></table></div></div></section>
+@endif
+
+@if (isset($recentManualVouchers))
+<section aria-labelledby="recent-manual-vouchers">
+    <div class="d-flex flex-wrap justify-content-between align-items-center gap-2 mb-3">
+        <h3 class="h5 mb-0" id="recent-manual-vouchers">Vales manuales recientes</h3>
+        @if ($dashboardRole === \App\Enums\UserRole::WAREHOUSE_MANAGER && $assignedWarehouses->count() === 1)
+            <a class="btn btn-sm btn-outline-primary" href="{{ route('warehouses.outbounds.index', $assignedWarehouses->first()) }}">Ver todas las salidas</a>
+        @endif
+    </div>
+    <div class="card border-0 shadow-sm">
+        <div class="table-responsive">
+            <table class="table align-middle mb-0">
+                <thead><tr><th>Folio</th><th>Fecha</th><th>Motivo</th><th>Destino</th><th>Almacén</th><th>Productos</th><th></th></tr></thead>
+                <tbody>
+                @forelse ($recentManualVouchers as $voucher)
+                    <tr>
+                        <td>#{{ $voucher->id }}</td>
+                        <td>{{ $voucher->processed_at->format('d/m/Y H:i') }}</td>
+                        <td><span class="badge text-bg-secondary">{{ $voucher->reason->label() }}</span></td>
+                        <td>
+                            @if ($voucher->reason === \App\Enums\InventoryOutboundReason::PATIENT_CARE)
+                                <span class="d-block">{{ $voucher->patient_name }}</span>
+                                @if ($voucher->room_number)<small class="text-body-secondary">Habitación {{ $voucher->room_number }}</small>@endif
+                            @else
+                                {{ $voucher->requesting_area ?: 'Consumo del almacén' }}
+                            @endif
+                        </td>
+                        <td>{{ $voucher->warehouse->name }}</td>
+                        <td>{{ $voucher->items_count }} {{ $voucher->items_count === 1 ? 'producto' : 'productos' }}</td>
+                        <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ route('warehouses.outbounds.show', [$voucher->warehouse, $voucher]) }}">Ver</a></td>
+                    </tr>
+                @empty
+                    <tr><td colspan="7" class="text-center text-body-secondary py-4">No hay vales manuales recientes de consumo interno o atención a pacientes.</td></tr>
+                @endforelse
+                </tbody>
+            </table>
+        </div>
+    </div>
+</section>
 @endif
 @endsection

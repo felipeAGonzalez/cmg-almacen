@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\AdministrationVoucherStatus;
+use App\Enums\InventoryOutboundReason;
 use App\Enums\NursingSupplySourceType;
 use App\Enums\NursingVoucherStatus;
 use App\Enums\UserRole;
@@ -10,6 +11,7 @@ use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
+use App\Models\InventoryOutbound;
 use App\Models\NursingVoucher;
 use App\Models\Product;
 use App\Models\User;
@@ -140,6 +142,51 @@ class DashboardTest extends TestCase
             ->assertSee('Enfermería se surte desde gabinete.');
     }
 
+    public function test_administrator_sees_only_patient_and_internal_consumption_manual_vouchers(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create(['name' => 'Almacén de vales manuales']);
+        $patient = $this->manualVoucher($warehouse, $admin, InventoryOutboundReason::PATIENT_CARE, [
+            'patient_name' => 'Paciente visible en tablero',
+            'room_number' => '204',
+        ]);
+        $internal = $this->manualVoucher($warehouse, $admin, InventoryOutboundReason::INTERNAL_CONSUMPTION, [
+            'requesting_area' => 'Área de curaciones visible',
+        ]);
+        $excluded = $this->manualVoucher($warehouse, $admin, InventoryOutboundReason::DAMAGE);
+
+        $this->actingAs($admin)->get(route('home'))
+            ->assertOk()->assertSee('Vales manuales recientes')
+            ->assertSee('Paciente visible en tablero')->assertSee('Habitación 204')
+            ->assertSee('Área de curaciones visible')
+            ->assertSee(route('warehouses.outbounds.show', [$warehouse, $patient]), false)
+            ->assertSee(route('warehouses.outbounds.show', [$warehouse, $internal]), false)
+            ->assertDontSee(route('warehouses.outbounds.show', [$warehouse, $excluded]), false);
+    }
+
+    public function test_manager_sees_manual_vouchers_only_from_assigned_warehouses_and_nurse_does_not_see_them(): void
+    {
+        $manager = User::factory()->warehouseManager()->create();
+        $assigned = Warehouse::factory()->create(['name' => 'Almacén manual asignado']);
+        $foreign = Warehouse::factory()->create(['name' => 'Almacén manual ajeno']);
+        $manager->warehouses()->attach($assigned);
+        $visible = $this->manualVoucher($assigned, $manager, InventoryOutboundReason::PATIENT_CARE, [
+            'patient_name' => 'Paciente manual visible',
+        ]);
+        $hidden = $this->manualVoucher($foreign, User::factory()->administrator()->create(), InventoryOutboundReason::PATIENT_CARE, [
+            'patient_name' => 'Paciente manual oculto',
+        ]);
+
+        $this->actingAs($manager)->get(route('home'))
+            ->assertOk()->assertSee('Vales manuales recientes')->assertSee('Paciente manual visible')
+            ->assertSee(route('warehouses.outbounds.show', [$assigned, $visible]), false)
+            ->assertDontSee('Paciente manual oculto')
+            ->assertDontSee(route('warehouses.outbounds.show', [$foreign, $hidden]), false);
+
+        $this->actingAs(User::factory()->nurse()->create())->get(route('home'))
+            ->assertOk()->assertDontSee('Vales manuales recientes')->assertDontSee('Paciente manual visible');
+    }
+
     public function test_unread_notification_count_is_visible(): void
     {
         $admin = User::factory()->administrator()->create();
@@ -198,6 +245,18 @@ class DashboardTest extends TestCase
         return AdministrationVoucher::create([
             'requested_by' => $requester->id, 'warehouse_id' => $warehouse->id, 'cabinet_id' => $cabinet->id,
             'status' => $status, 'requested_at' => now(),
+        ]);
+    }
+
+    /** @param array<string, mixed> $attributes */
+    private function manualVoucher(Warehouse $warehouse, User $user, InventoryOutboundReason $reason, array $attributes = []): InventoryOutbound
+    {
+        return $warehouse->inventoryOutbounds()->create([
+            'reason' => $reason,
+            'processed_by' => $user->id,
+            'processed_at' => now(),
+            'source_type' => InventoryOutbound::SOURCE_MANUAL,
+            ...$attributes,
         ]);
     }
 }

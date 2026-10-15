@@ -3,6 +3,7 @@
 namespace App\Services;
 
 use App\Enums\AdministrationVoucherStatus;
+use App\Enums\InventoryOutboundReason;
 use App\Enums\NursingSupplySourceType;
 use App\Enums\NursingVoucherStatus;
 use App\Enums\UserRole;
@@ -10,6 +11,7 @@ use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
+use App\Models\InventoryOutbound;
 use App\Models\NursingVoucher;
 use App\Models\User;
 use App\Models\Warehouse;
@@ -60,6 +62,7 @@ class DashboardService
             ],
             'recentNursingVouchers' => NursingVoucher::with(['requester:id,name,last_name_one', 'warehouse:id,name'])->latest('requested_at')->limit(5)->get(),
             'recentAdministrationVouchers' => AdministrationVoucher::with(['requester:id,name,last_name_one', 'warehouse:id,name', 'cabinet:id,name'])->latest('requested_at')->limit(5)->get(),
+            'recentManualVouchers' => $this->recentManualVouchers(),
         ];
     }
 
@@ -83,6 +86,7 @@ class DashboardService
             'summary' => [...$this->stockCounts(clone $inventory), ...$this->voucherCounts($nursing, $administration)],
             'stockLocations' => $this->stockByLocation($warehouseIds),
             'attentionVouchers' => $nursingAttention->concat($administrationAttention)->sortBy('date')->take(10)->values(),
+            'recentManualVouchers' => $this->recentManualVouchers($warehouseIds),
         ];
     }
 
@@ -184,6 +188,23 @@ class DashboardService
                 'counts' => $metrics('cabinet', $cabinet->id),
             ]),
         ]);
+    }
+
+    private function recentManualVouchers(?Collection $warehouseIds = null): Collection
+    {
+        return InventoryOutbound::query()
+            ->with('warehouse:id,name')
+            ->withCount('items')
+            ->where('source_type', InventoryOutbound::SOURCE_MANUAL)
+            ->whereIn('reason', [
+                InventoryOutboundReason::PATIENT_CARE,
+                InventoryOutboundReason::INTERNAL_CONSUMPTION,
+            ])
+            ->when($warehouseIds !== null, fn (Builder $query) => $query->whereIn('warehouse_id', $warehouseIds))
+            ->orderByDesc('processed_at')
+            ->orderByDesc('id')
+            ->limit(10)
+            ->get();
     }
 
     /** @return array<string, int> */
