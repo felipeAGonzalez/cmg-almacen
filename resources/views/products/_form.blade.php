@@ -15,6 +15,10 @@
         <label for="name" class="form-label">Nombre del producto <span class="text-danger" aria-hidden="true">*</span></label>
         <input type="text" id="name" name="name" value="{{ old('name', $product->name ?? '') }}" class="form-control @error('name') is-invalid @enderror" placeholder="Ej. Jeringa desechable 10 ml" maxlength="255" autofocus required>
         @error('name') <div class="invalid-feedback">{{ $message }}</div> @enderror
+        <label for="commercial_name" class="form-label mt-3">Nombre comercial <span class="text-body-secondary fw-normal">(Opcional)</span></label>
+        <input type="text" id="commercial_name" name="commercial_name" value="{{ old('commercial_name', $product->commercial_name ?? '') }}" class="form-control @error('commercial_name') is-invalid @enderror" placeholder="Ej. Tempra" maxlength="255">
+        <div class="form-text">Nombre con el que se identifica comercialmente el producto.</div>
+        @error('commercial_name') <div class="invalid-feedback">{{ $message }}</div> @enderror
     </div>
 
     <div class="form-section border-top pt-4 mt-4">

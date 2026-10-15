@@ -1,3 +1,32 @@
+function normalizeProductSearch(value) {
+    return String(value || '')
+        .normalize('NFD')
+        .replace(/[\u0300-\u036f]/g, '')
+        .toLocaleLowerCase('es-MX')
+        .trim();
+}
+
+function refreshProductPicker(picker) {
+    if (!picker) return;
+
+    const input = picker.querySelector('[data-product-search-input]');
+    const select = picker.querySelector('[data-product-search-select]');
+    if (!input || !select) return;
+
+    const search = normalizeProductSearch(input.value);
+    Array.from(select.options).forEach(function (option) {
+        if (!option.value) return;
+
+        const matches = !search || normalizeProductSearch(option.dataset.productSearch).includes(search) || option.selected;
+        option.hidden = option.dataset.contextHidden === 'true' || !matches;
+    });
+}
+
+document.addEventListener('input', function (event) {
+    if (!event.target.matches('[data-product-search-input]')) return;
+    refreshProductPicker(event.target.closest('[data-product-picker]'));
+});
+
 document.addEventListener('DOMContentLoaded', function () {
     const form = document.querySelector('[data-user-form]');
     if (!form) return;
@@ -362,7 +391,7 @@ document.addEventListener('DOMContentLoaded', function () {
         list.appendChild(row);
         initializeRow(row);
         reindexRows();
-        row.querySelector('[data-entry-product]').focus();
+        row.querySelector('[data-product-search-input]')?.focus();
     });
 
     entryForm.addEventListener('submit', function () {
@@ -428,6 +457,7 @@ document.addEventListener('DOMContentLoaded', function () {
             const item = inventoryById.get(option.value);
             option.disabled = !cabinetSelect.value || !compatible.has(String(item.productId)) || selectedElsewhere.has(option.value);
         });
+        refreshProductPicker(row.querySelector('[data-product-picker]'));
 
         row.querySelector('[data-transfer-stock]').textContent = selected ? formatQuantity(selected.usableStock) : '—';
         row.querySelector('[data-transfer-unit]').textContent = selected?.unit || 'Unidad';
@@ -495,7 +525,7 @@ document.addEventListener('DOMContentLoaded', function () {
         initializeRow(row);
         reindexRows();
         updateAllRows();
-        row.querySelector('[data-transfer-product]').focus();
+        row.querySelector('[data-product-search-input]')?.focus();
     });
 
     form.addEventListener('submit', function () {
@@ -562,9 +592,10 @@ document.addEventListener('DOMContentLoaded', function () {
             if (!option.value) return;
             const item = byId.get(option.value);
             const belongsToSource = item?.sourceKey === selectedSourceKey();
-            option.hidden = !belongsToSource;
+            option.dataset.contextHidden = belongsToSource ? 'false' : 'true';
             option.disabled = !belongsToSource || used.has(option.value);
         });
+        refreshProductPicker(row.querySelector('[data-product-picker]'));
         row.querySelector('[data-outbound-stock]').textContent = selected ? formatQuantity(selected.usableStock) : '—';
         row.querySelector('[data-outbound-unit]').textContent = selected?.unit || 'Unidad';
         row.querySelector('[data-outbound-stock-warning]').classList.toggle('d-none', !selected || quantity <= Number.parseFloat(selected.usableStock));
@@ -622,7 +653,7 @@ document.addEventListener('DOMContentLoaded', function () {
         wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', list.querySelectorAll('[data-outbound-item]').length).trim();
         const row = wrapper.firstElementChild;
         list.appendChild(row); initializeRow(row); reindexRows(); updateRows();
-        row.querySelector('[data-outbound-product]').focus();
+        row.querySelector('[data-product-search-input]')?.focus();
     });
     form.addEventListener('submit', function () {
         const submit = form.querySelector('[data-outbound-submit]');
@@ -737,8 +768,17 @@ document.addEventListener('DOMContentLoaded', function () {
             });
             row.querySelector('[data-voucher-unit]').textContent = product?.unit || 'Unidad';
             row.querySelector('[data-voucher-product-detail]').textContent = product
-                ? [product.code, product.barcode].filter(Boolean).join(' · ') || 'Sin código adicional'
-                : 'Selecciona por nombre, código o código de barras.';
+                ? [product.commercialName ? `Comercial: ${product.commercialName}` : null, product.code, product.barcode].filter(Boolean).join(' · ') || 'Sin información adicional'
+                : 'Selecciona por nombre, nombre comercial, código o código de barras.';
+        }
+
+        function filterRow(row) {
+            const search = row.querySelector('[data-voucher-product-search]').value.trim().toLocaleLowerCase('es-MX');
+            const select = row.querySelector('[data-voucher-product]');
+            Array.from(select.options).forEach(function (option) {
+                if (!option.value) return;
+                option.hidden = Boolean(search) && !option.dataset.productSearch.includes(search) && !option.selected;
+            });
         }
 
         function updateAll() {
@@ -758,6 +798,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function initialize(row) {
             row.querySelector('[data-voucher-product]').addEventListener('change', updateAll);
+            row.querySelector('[data-voucher-product-search]').addEventListener('input', function () {
+                filterRow(row);
+            });
             row.querySelector('[data-remove-voucher-item]').addEventListener('click', function () {
                 if (list.querySelectorAll('[data-voucher-item]').length === 1) return;
                 row.remove();

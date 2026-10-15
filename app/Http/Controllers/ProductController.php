@@ -22,6 +22,7 @@ class ProductController extends Controller
             ->with(['unit', 'category', 'brand'])
             ->when($search, fn ($query) => $query->where(function ($searchQuery) use ($search): void {
                 $searchQuery->where('name', 'like', "%{$search}%")
+                    ->orWhere('commercial_name', 'like', "%{$search}%")
                     ->orWhere('code', 'like', "%{$search}%")
                     ->orWhere('barcode', 'like', "%{$search}%");
             }))

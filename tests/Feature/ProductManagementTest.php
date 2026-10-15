@@ -136,13 +136,14 @@ class ProductManagementTest extends TestCase
         $this->actingAs(User::factory()->administrator()->create())
             ->post(route('products.store'), $this->payload([
                 'name' => '  Guantes clínicos  ',
+                'commercial_name' => '  Guantes Protect  ',
                 'code' => '  CMG-GUA-01  ',
                 'barcode' => '   ',
                 'description' => '   ',
             ]))->assertSessionHasNoErrors();
 
         $this->assertDatabaseHas('products', [
-            'name' => 'Guantes clínicos', 'code' => 'CMG-GUA-01',
+            'name' => 'Guantes clínicos', 'commercial_name' => 'Guantes Protect', 'code' => 'CMG-GUA-01',
             'barcode' => null, 'description' => null,
         ]);
     }
@@ -235,13 +236,13 @@ class ProductManagementTest extends TestCase
             });
     }
 
-    public function test_product_index_can_search_by_name_code_and_barcode(): void
+    public function test_product_index_can_search_by_name_commercial_name_code_and_barcode(): void
     {
         $administrator = User::factory()->administrator()->create();
-        Product::factory()->create(['name' => 'Paracetamol tabletas', 'code' => 'MED-PAR-01', 'barcode' => '750000000101']);
+        Product::factory()->create(['name' => 'Paracetamol tabletas', 'commercial_name' => 'Tempra hospitalario', 'code' => 'MED-PAR-01', 'barcode' => '750000000101']);
         Product::factory()->create(['name' => 'Jeringa estéril', 'code' => 'MAT-JER-02', 'barcode' => '750000000202']);
 
-        foreach (['Paracetamol', 'MED-PAR-01', '750000000101'] as $search) {
+        foreach (['Paracetamol', 'Tempra', 'MED-PAR-01', '750000000101'] as $search) {
             $this->actingAs($administrator)->get(route('products.index', ['search' => $search]))
                 ->assertOk()
                 ->assertSee('Paracetamol tabletas')
@@ -274,6 +275,7 @@ class ProductManagementTest extends TestCase
     {
         return array_merge([
             'name' => 'Producto de prueba',
+            'commercial_name' => null,
             'code' => 'CMG-'.fake()->unique()->uuid(),
             'barcode' => null,
             'unit_id' => Unit::factory()->create()->id,

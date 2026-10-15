@@ -35,6 +35,7 @@ class InventoryKardexTest extends TestCase
     {
         Carbon::setTestNow('2026-08-31 12:00:00');
         [$warehouse, $cabinet, $source, , $user] = $this->context();
+        $source->product->update(['commercial_name' => 'Marca Kardex']);
         [$entry, $batch] = $this->entryBatch($warehouse, $source, '20', 'MFG-01', '2027-03-15');
         $transfer = $this->transfer($warehouse, $cabinet, $source, $user, '5');
         $outbound = $this->outbound($warehouse, $source, $user, '3');
@@ -47,6 +48,8 @@ class InventoryKardexTest extends TestCase
 
         $this->actingAs($user)->get(route('warehouses.kardex.index', $warehouse))->assertOk()
             ->assertSee('Entrada')->assertSee('Transferencia enviada')->assertSee('Salida manual')
+            ->assertSee('Comercial: Marca Kardex')->assertSee('Buscar por ingrediente activo o nombre comercial')
+            ->assertSee('data-product-search-select', false)
             ->assertSee('MFG-01')->assertSee('Caduca: 15/03/2027')->assertSee($user->name)
             ->assertSee(route('warehouses.entries.show', [$warehouse, $entry]), false)
             ->assertSee(route('warehouses.transfers.show', [$warehouse, $transfer]), false)

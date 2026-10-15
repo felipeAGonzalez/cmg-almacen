@@ -2,12 +2,13 @@
     <div class="admin-card-header"><h3 class="h6 fw-bold mb-0">Filtros</h3></div>
     <form method="GET" action="{{ $kardexRoute }}" class="p-3 p-lg-4">
         <div class="row g-3 align-items-end">
-            <div class="col-12 col-lg-4">
+            <div class="col-12 col-lg-4" data-product-picker>
                 <label for="inventory_item_id" class="form-label">Producto</label>
-                <select id="inventory_item_id" name="inventory_item_id" class="form-select @error('inventory_item_id') is-invalid @enderror">
+                <input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto en Kardex">
+                <select id="inventory_item_id" name="inventory_item_id" class="form-select @error('inventory_item_id') is-invalid @enderror" data-product-search-select>
                     <option value="">Todos los productos</option>
                     @foreach($inventoryItems as $inventoryItem)
-                        <option value="{{ $inventoryItem->id }}" @selected((string) ($filters['inventory_item_id'] ?? '') === (string) $inventoryItem->id)>{{ $inventoryItem->product->name }} — {{ $inventoryItem->product->unit->name }}</option>
+                        <option value="{{ $inventoryItem->id }}" data-product-search="{{ implode(' ', array_filter([$inventoryItem->product->name, $inventoryItem->product->commercial_name, $inventoryItem->product->code, $inventoryItem->product->barcode])) }}" @selected((string) ($filters['inventory_item_id'] ?? '') === (string) $inventoryItem->id)>{{ $inventoryItem->product->name }}@if($inventoryItem->product->commercial_name) — Comercial: {{ $inventoryItem->product->commercial_name }}@endif — {{ $inventoryItem->product->unit->name }}</option>
                     @endforeach
                 </select>
                 @error('inventory_item_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

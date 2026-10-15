@@ -49,6 +49,7 @@
         $productOptions = $inventoryItems->map(fn($inventoryItem) => [
             'id' => $inventoryItem->product->id,
             'name' => $inventoryItem->product->name,
+            'commercialName' => $inventoryItem->product->commercial_name,
             'unit' => $inventoryItem->product->unit->abbreviation ?: $inventoryItem->product->unit->name,
             'code' => $inventoryItem->product->code,
             'barcode' => $inventoryItem->product->barcode,
@@ -58,7 +59,7 @@
         @csrf
         <section class="admin-card mb-4" data-nursing-voucher-items data-product-options='@json($productOptions)'>
             <div class="admin-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">
-                <div><h3 class="h6 fw-bold mb-1">Productos solicitados</h3><p class="small text-body-secondary mb-0">Puedes buscar por nombre, código o código de barras.</p></div>
+                <div><h3 class="h6 fw-bold mb-1">Productos solicitados</h3><p class="small text-body-secondary mb-0">Puedes buscar por nombre, nombre comercial, código o código de barras.</p></div>
                 <button type="button" class="btn btn-outline-primary btn-sm" data-add-voucher-item><i class="bi bi-plus-lg me-1"></i>Agregar producto</button>
             </div>
             <div class="p-3 d-grid gap-3" data-voucher-items-list>

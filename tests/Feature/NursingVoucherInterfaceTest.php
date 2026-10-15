@@ -69,7 +69,7 @@ class NursingVoucherInterfaceTest extends TestCase
     {
         Carbon::setTestNow('2026-09-07 10:00:00');
         [$nurse, $warehouse, $cabinet] = $this->nurseContext();
-        $allowed = Product::factory()->create(['name' => 'Producto permitido', 'code' => 'PER-1']);
+        $allowed = Product::factory()->create(['name' => 'Producto permitido', 'commercial_name' => 'Marca rápida', 'code' => 'PER-1']);
         $foreign = Product::factory()->create(['name' => 'Producto ajeno']);
         InventoryItem::factory()->forWarehouse($warehouse)->for($allowed)->create();
         InventoryItem::factory()->forCabinet($cabinet)->for($foreign)->create();
@@ -80,7 +80,9 @@ class NursingVoucherInterfaceTest extends TestCase
             ->assertOk()
             ->assertSee('Paciente validado')->assertSee('Habitación 204')
             ->assertSee('El vale será enviado al almacén para su surtido.')
-            ->assertSee('Producto permitido')->assertDontSee('Producto ajeno')
+            ->assertSee('Producto permitido')->assertSee('Comercial: Marca rápida')->assertDontSee('Producto ajeno')
+            ->assertSee('data-voucher-product-search', false)
+            ->assertSee('nombre comercial')
             ->assertDontSee('name="source_type"', false);
     }
 

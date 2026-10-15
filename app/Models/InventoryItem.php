@@ -69,6 +69,7 @@ class InventoryItem extends Model
             'product',
             fn (Builder $product) => $product
                 ->where('name', 'like', "%{$search}%")
+                ->orWhere('commercial_name', 'like', "%{$search}%")
                 ->orWhere('code', 'like', "%{$search}%")
                 ->orWhere('barcode', 'like', "%{$search}%"),
         ));
@@ -99,9 +100,9 @@ class InventoryItem extends Model
         if ($expirationStatus === 'without_expiration') {
             $query->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', false));
         } elseif ($expirationStatus || $expirationFrom || $expirationTo) {
-            $query->whereHas('product', fn (Builder $product) => $product->where('requires_expiration', true));
             $query->whereHas('batches', function (Builder $batches) use ($expirationStatus, $expirationFrom, $expirationTo, $today): void {
                 $batches->where('available_quantity', '>', 0)
+                    ->whereNotNull('expiration_date')
                     ->when($expirationStatus === 'expired', fn (Builder $batch) => $batch->whereDate('expiration_date', '<', $today))
                     ->when($expirationStatus === 'valid', fn (Builder $batch) => $batch->whereDate('expiration_date', '>=', $today))
                     ->when($expirationFrom, fn (Builder $batch) => $batch->whereDate('expiration_date', '>=', $expirationFrom))

@@ -67,6 +67,7 @@ class EntryInterfaceTest extends TestCase
     public function test_create_only_displays_contextual_suppliers_and_main_inventory_items(): void
     {
         [$warehouse, $supplier, $inventoryItem, $administrator] = $this->context();
+        $inventoryItem->product->update(['commercial_name' => 'Marca Entrada']);
         $otherSupplier = Supplier::factory()->create(['name' => 'Proveedor externo']);
         $otherItem = InventoryItem::factory()->forWarehouse(Warehouse::factory()->create())->create();
         $cabinet = Cabinet::factory()->for($warehouse)->create();
@@ -77,6 +78,9 @@ class EntryInterfaceTest extends TestCase
         $response->assertOk()
             ->assertSee($supplier->name)
             ->assertSee($inventoryItem->product->name)
+            ->assertSee('Comercial: Marca Entrada')
+            ->assertSee('Buscar por ingrediente activo o nombre comercial')
+            ->assertSee('data-product-search-input', false)
             ->assertDontSee($otherSupplier->name)
             ->assertDontSee($otherItem->product->name)
             ->assertDontSee($cabinetItem->product->name)

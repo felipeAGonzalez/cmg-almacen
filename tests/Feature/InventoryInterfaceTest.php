@@ -70,14 +70,17 @@ class InventoryInterfaceTest extends TestCase
         $location = Location::factory()->for($warehouse)->create(['name' => 'Refrigerador']);
         $otherLocation = Location::factory()->for($otherWarehouse)->create(['name' => 'Ubicación ajena']);
         $cabinet = Cabinet::factory()->for($warehouse)->create();
-        Product::factory()->create(['name' => 'Solución salina', 'code' => 'SOL-001']);
+        Product::factory()->create(['name' => 'Solución salina', 'commercial_name' => 'Solución Comercial', 'code' => 'SOL-001']);
         $administrator = User::factory()->administrator()->create();
 
         $this->actingAs($administrator)
             ->get(route('warehouses.inventory.create', $warehouse))
             ->assertOk()
             ->assertSee('Agregar producto al inventario')
-            ->assertSee('Solución salina — SOL-001')
+            ->assertSee('Solución salina')
+            ->assertSee('Comercial: Solución Comercial')
+            ->assertSee('Buscar por ingrediente activo o nombre comercial')
+            ->assertSee('data-product-search-select', false)
             ->assertSee('name="location_id"', false)
             ->assertSee('Refrigerador')
             ->assertDontSee('Ubicación ajena');

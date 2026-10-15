@@ -20,6 +20,7 @@ class UpdateProductRequest extends FormRequest
 
         return [
             'name' => ['required', 'string', 'max:255'],
+            'commercial_name' => ['nullable', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:100', 'required_without:barcode', Rule::unique('products', 'code')->ignore($product)],
             'barcode' => ['nullable', 'string', 'max:100', 'required_without:code', Rule::unique('products', 'barcode')->ignore($product)],
             'unit_id' => ['required', 'integer', 'exists:units,id'],
@@ -48,7 +49,7 @@ class UpdateProductRequest extends FormRequest
             $this->merge(['requires_expiration' => false]);
         }
 
-        foreach (['name', 'code', 'barcode', 'description'] as $field) {
+        foreach (['name', 'commercial_name', 'code', 'barcode', 'description'] as $field) {
             $value = $this->input($field);
             if (is_string($value)) {
                 $value = trim($value);

@@ -18,6 +18,7 @@ class ProductFactory extends Factory
             'category_id' => Category::factory(),
             'brand_id' => Brand::factory(),
             'name' => 'Product '.fake()->unique()->uuid(),
+            'commercial_name' => null,
             'code' => 'CMG-'.fake()->unique()->uuid(),
             'barcode' => fake()->optional()->numerify('#############'),
             'description' => fake()->optional()->sentence(),

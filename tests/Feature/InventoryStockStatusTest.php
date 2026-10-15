@@ -153,8 +153,9 @@ class InventoryStockStatusTest extends TestCase
     {
         Carbon::setTestNow('2026-10-12 12:00:00');
         $warehouse = Warehouse::factory()->create();
-        $criticalProduct = Product::factory()->create(['name' => 'Paracetamol especial', 'requires_expiration' => true]);
+        $criticalProduct = Product::factory()->create(['name' => 'Paracetamol especial', 'commercial_name' => 'Tempra inventario', 'requires_expiration' => true]);
         $healthyProduct = Product::factory()->create(['name' => 'Solución salina', 'requires_expiration' => true]);
+        $legacyProduct = Product::factory()->create(['name' => 'Material con lote fechado', 'requires_expiration' => false]);
         $critical = InventoryItem::factory()->forWarehouse($warehouse)->for($criticalProduct)->create([
             'minimum_stock' => 10,
             'maximum_stock' => 20,
@@ -163,18 +164,26 @@ class InventoryStockStatusTest extends TestCase
             'minimum_stock' => 10,
             'maximum_stock' => 20,
         ]);
+        $legacy = InventoryItem::factory()->forWarehouse($warehouse)->for($legacyProduct)->create([
+            'minimum_stock' => 10,
+            'maximum_stock' => 20,
+        ]);
         $this->batch($critical, '5', '2026-10-11');
         $this->batch($healthy, '25', '2026-11-01');
+        $this->batch($legacy, '3', '2026-10-10');
         $admin = User::factory()->administrator()->create();
 
         $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'search' => 'Paracetamol']))
+            ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
+
+        $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'search' => 'Tempra']))
             ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
 
         $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'stock_status' => 'critical']))
             ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
 
         $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'expiration_status' => 'expired']))
-            ->assertOk()->assertSee('Paracetamol especial')->assertDontSee('Solución salina');
+            ->assertOk()->assertSee('Paracetamol especial')->assertSee('Material con lote fechado')->assertDontSee('Solución salina');
 
         $this->actingAs($admin)->get(route('warehouses.inventory.index', [$warehouse, 'expiration_from' => '2026-10-20', 'expiration_to' => '2026-11-02']))
             ->assertOk()->assertSee('Solución salina')->assertDontSee('Paracetamol especial');

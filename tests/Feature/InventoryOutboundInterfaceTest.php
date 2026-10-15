@@ -61,13 +61,16 @@ class InventoryOutboundInterfaceTest extends TestCase
     {
         Carbon::setTestNow('2026-08-31');
         [$warehouse, $item, $user] = $this->context();
+        $item->product->update(['commercial_name' => 'Marca Salida']);
         $this->batch($warehouse, $item, '7.500', '2027-01-01');
         $this->batch($warehouse, $item, '20', '2026-08-30');
         $other = InventoryItem::factory()->forWarehouse(Warehouse::factory()->create())->create();
         $cabinetItem = InventoryItem::factory()->forCabinet(Cabinet::factory()->for($warehouse)->create())->create();
 
         $response = $this->actingAs($user)->get(route('warehouses.outbounds.create', $warehouse));
-        $response->assertOk()->assertSee($item->product->name)->assertDontSee($other->product->name)
+        $response->assertOk()->assertSee($item->product->name)->assertSee('Comercial: Marca Salida')
+            ->assertSee('Buscar por ingrediente activo o nombre comercial')->assertSee('data-product-search-select', false)
+            ->assertDontSee($other->product->name)
             ->assertSee($cabinetItem->product->name)->assertSee('usableStock')->assertSee('7.5')
             ->assertSee('items[0][inventory_item_id]', false)->assertSee('items[0][quantity]', false)
             ->assertSee('name="processed_at"', false)->assertSee('type="datetime-local"', false)

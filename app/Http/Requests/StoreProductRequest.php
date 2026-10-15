@@ -17,6 +17,7 @@ class StoreProductRequest extends FormRequest
     {
         return [
             'name' => ['required', 'string', 'max:255'],
+            'commercial_name' => ['nullable', 'string', 'max:255'],
             'code' => ['nullable', 'string', 'max:100', 'required_without:barcode', 'unique:products,code'],
             'barcode' => ['nullable', 'string', 'max:100', 'required_without:code', 'unique:products,barcode'],
             'unit_id' => ['required', 'integer', 'exists:units,id'],
@@ -34,6 +35,8 @@ class StoreProductRequest extends FormRequest
             'name.required' => 'El nombre es obligatorio.',
             'name.string' => 'El nombre debe ser texto.',
             'name.max' => 'El nombre no puede tener más de 255 caracteres.',
+            'commercial_name.string' => 'El nombre comercial debe ser texto.',
+            'commercial_name.max' => 'El nombre comercial no puede tener más de 255 caracteres.',
             'code.required_without' => 'Debes capturar un código interno o un código de barras.',
             'code.string' => 'El código interno debe ser texto.',
             'code.max' => 'El código interno no puede tener más de 100 caracteres.',
@@ -61,7 +64,7 @@ class StoreProductRequest extends FormRequest
     public function attributes(): array
     {
         return [
-            'name' => 'nombre', 'code' => 'código interno', 'barcode' => 'código de barras',
+            'name' => 'nombre', 'commercial_name' => 'nombre comercial', 'code' => 'código interno', 'barcode' => 'código de barras',
             'unit_id' => 'unidad', 'category_id' => 'categoría', 'brand_id' => 'marca',
             'description' => 'descripción', 'requires_expiration' => 'control de caducidad',
         ];
@@ -73,7 +76,7 @@ class StoreProductRequest extends FormRequest
             $this->merge(['requires_expiration' => false]);
         }
 
-        foreach (['name', 'code', 'barcode', 'description'] as $field) {
+        foreach (['name', 'commercial_name', 'code', 'barcode', 'description'] as $field) {
             $value = $this->input($field);
             if (is_string($value)) {
                 $value = trim($value);

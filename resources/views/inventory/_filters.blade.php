@@ -19,7 +19,7 @@
             @endisset
             <div class="col-12 {{ isset($inventoryContexts) ? 'col-lg-4' : 'col-lg-6' }}">
                 <label for="inventory-search" class="form-label">Producto</label>
-                <input type="search" class="form-control" id="inventory-search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Nombre, código o código de barras">
+                <input type="search" class="form-control" id="inventory-search" name="search" value="{{ $filters['search'] ?? '' }}" placeholder="Ingrediente activo, nombre comercial o código">
             </div>
             <div class="col-12 col-sm-6 {{ isset($inventoryContexts) ? 'col-lg-2' : 'col-lg-3' }}">
                 <label for="stock-status" class="form-label">Estado de stock</label>

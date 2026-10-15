@@ -60,7 +60,7 @@ class ProductInterfaceTest extends TestCase
             ->get(route('products.index'))
             ->assertOk()
             ->assertSee('Buscar productos')
-            ->assertSee('Nombre, código interno o código de barras')
+            ->assertSee('Nombre, nombre comercial, código interno o código de barras')
             ->assertSee('No hay productos registrados.')
             ->assertSee('Crear producto');
 
@@ -100,6 +100,7 @@ class ProductInterfaceTest extends TestCase
             ->assertOk()
             ->assertSee('Debes registrar al menos una unidad, categoría y marca antes de crear productos.')
             ->assertSee('Nombre del producto')
+            ->assertSee('Nombre comercial')
             ->assertSee('Código interno')
             ->assertSee('Código de barras')
             ->assertSee('Guardar producto');
@@ -109,6 +110,7 @@ class ProductInterfaceTest extends TestCase
     {
         $product = Product::factory()->create([
             'name' => 'Jeringa desechable 10 ml',
+            'commercial_name' => 'Jeringa CMG Plus',
             'code' => 'JER-10ML-001',
             'barcode' => '7501234567890',
             'description' => 'Jeringa estéril.',
@@ -118,6 +120,7 @@ class ProductInterfaceTest extends TestCase
             ->get(route('products.edit', $product))
             ->assertOk()
             ->assertSee('Jeringa desechable 10 ml')
+            ->assertSee('Jeringa CMG Plus')
             ->assertSee('JER-10ML-001')
             ->assertSee('7501234567890')
             ->assertSee('Jeringa estéril.')

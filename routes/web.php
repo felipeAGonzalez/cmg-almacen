@@ -24,6 +24,7 @@ use App\Http\Controllers\NursingVoucherController;
 use App\Http\Controllers\NursingVoucherFulfillmentController;
 use App\Http\Controllers\NursingVoucherReturnController;
 use App\Http\Controllers\OperationalSettingController;
+use App\Http\Controllers\PatientVoucherReportController;
 use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
@@ -47,6 +48,13 @@ Route::get('/auth/hospital/delegated', [HospitalDelegatedAuthController::class, 
 Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::get('/home', DashboardController::class)->name('home');
     Route::get('/inventory', InventoryOverviewController::class)->name('inventory.index');
+    Route::controller(PatientVoucherReportController::class)
+        ->prefix('reports/patient-vouchers')
+        ->middleware('role:administrator')
+        ->group(function (): void {
+            Route::get('/', 'index')->name('reports.patient-vouchers.index');
+            Route::get('/patient', 'show')->name('reports.patient-vouchers.show');
+        });
 
     Route::get('/nursing/hospital-context', [HospitalDelegatedAuthController::class, 'context'])
         ->middleware('role:nurse')

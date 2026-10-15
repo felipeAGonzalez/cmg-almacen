@@ -24,12 +24,13 @@
             <input type="hidden" name="product_id" value="{{ $inventoryItem->product_id }}">
             <div class="form-text mb-3">El producto no puede cambiarse desde esta pantalla.</div>
         @else
-            <div class="mb-3">
+            <div class="mb-3" data-product-picker>
                 <label for="product_id" class="form-label">Producto <span class="text-danger" aria-hidden="true">*</span></label>
-                <select id="product_id" name="product_id" class="form-select @error('product_id') is-invalid @enderror" required>
+                <input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto para configurar">
+                <select id="product_id" name="product_id" class="form-select @error('product_id') is-invalid @enderror" data-product-search-select required>
                     <option value="">Selecciona un producto</option>
                     @foreach ($products as $product)
-                        <option value="{{ $product->id }}" @selected((string) old('product_id') === (string) $product->id)>{{ $product->name }}@if ($product->code) — {{ $product->code }}@elseif ($product->barcode) — {{ $product->barcode }}@endif</option>
+                        <option value="{{ $product->id }}" data-product-search="{{ implode(' ', array_filter([$product->name, $product->commercial_name, $product->code, $product->barcode])) }}" @selected((string) old('product_id') === (string) $product->id)>{{ $product->name }}@if($product->commercial_name) — Comercial: {{ $product->commercial_name }}@endif @if ($product->code) — {{ $product->code }}@elseif ($product->barcode) — {{ $product->barcode }}@endif</option>
                     @endforeach
                 </select>
                 @error('product_id')<div class="invalid-feedback">{{ $message }}</div>@enderror

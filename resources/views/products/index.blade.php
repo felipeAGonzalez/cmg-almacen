@@ -10,7 +10,7 @@
             <label for="product-search" class="form-label fw-semibold">Buscar productos</label>
             <div class="row g-2">
                 <div class="col-12 col-lg-8">
-                    <input id="product-search" name="search" type="search" maxlength="120" value="{{ $search ?? '' }}" class="form-control" placeholder="Nombre, código interno o código de barras" autocomplete="off">
+                    <input id="product-search" name="search" type="search" maxlength="120" value="{{ $search ?? '' }}" class="form-control" placeholder="Nombre, nombre comercial, código interno o código de barras" autocomplete="off">
                 </div>
                 <div class="col-12 col-lg-auto d-flex gap-2">
                     <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
@@ -28,7 +28,7 @@
             <div class="empty-state">
                 <span class="empty-state-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
                 <h3 class="h5">{{ $search ? 'No se encontraron productos.' : 'No hay productos registrados.' }}</h3>
-                <p class="text-body-secondary mb-4">{{ $search ? 'Prueba con otro nombre, código interno o código de barras.' : 'Crea el primer producto del catálogo general.' }}</p>
+                <p class="text-body-secondary mb-4">{{ $search ? 'Prueba con otro nombre, nombre comercial, código interno o código de barras.' : 'Crea el primer producto del catálogo general.' }}</p>
                 @if ($search)
                     <a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar búsqueda</a>
                 @else
@@ -44,6 +44,7 @@
                             <tr>
                                 <td>
                                     <strong class="fw-semibold d-block">{{ $product->name }}</strong>
+                                    @if ($product->commercial_name)<span class="small text-primary-emphasis d-block">Comercial: {{ $product->commercial_name }}</span>@endif
                                     @if ($product->description)<span class="small text-body-secondary d-block text-wrap">{{ $product->description }}</span>@endif
                                 </td>
                                 <td class="small text-nowrap">

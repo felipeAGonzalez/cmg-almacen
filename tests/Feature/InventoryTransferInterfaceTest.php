@@ -61,6 +61,7 @@ class InventoryTransferInterfaceTest extends TestCase
     public function test_create_only_displays_contextual_cabinets_and_warehouse_inventory_items(): void
     {
         [$warehouse, $cabinet, $source, , $user] = $this->context();
+        $source->product->update(['commercial_name' => 'Marca Transferencia']);
         $otherCabinet = Cabinet::factory()->create(['name' => 'Gabinete externo']);
         $otherSource = InventoryItem::factory()->forWarehouse(Warehouse::factory()->create())->create();
         $cabinetOnly = InventoryItem::factory()->forCabinet($cabinet)->create();
@@ -69,6 +70,9 @@ class InventoryTransferInterfaceTest extends TestCase
             ->assertOk()->assertSee($cabinet->name)->assertSee($source->product->name)
             ->assertDontSee($otherCabinet->name)->assertDontSee($otherSource->product->name)
             ->assertDontSee($cabinetOnly->product->name)
+            ->assertSee('Comercial: Marca Transferencia')
+            ->assertSee('Buscar por ingrediente activo o nombre comercial')
+            ->assertSee('data-product-search-select', false)
             ->assertSee('items[0][source_inventory_item_id]', false)
             ->assertSee('items[0][quantity]', false);
     }

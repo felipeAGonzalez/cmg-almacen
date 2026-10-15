@@ -6,13 +6,14 @@
 <fieldset class="transfer-item" data-outbound-item>
     <legend class="transfer-item-title">Producto <span data-outbound-item-number>{{ is_numeric($index) ? ((int) $index + 1) : '' }}</span></legend>
     <div class="row g-3 align-items-start">
-        <div class="col-12 col-lg-6">
+        <div class="col-12 col-lg-6" data-product-picker>
             <label class="form-label">Producto <span class="text-danger">*</span></label>
-            <select name="items[{{ $index }}][inventory_item_id]" class="form-select {{ $productError ? 'is-invalid' : '' }}" data-outbound-product required>
+            <input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto de la salida {{ is_numeric($index) ? ((int) $index + 1) : '' }}">
+            <select name="items[{{ $index }}][inventory_item_id]" class="form-select {{ $productError ? 'is-invalid' : '' }}" data-outbound-product data-product-search-select required>
                 <option value="">Selecciona un producto</option>
                 @foreach($inventoryItems as $inventoryItem)
                     @php($identifier = $inventoryItem->product->code ?: $inventoryItem->product->barcode)
-                    <option value="{{ $inventoryItem->id }}" data-source-key="{{ $inventoryItem->stockable_type }}:{{ $inventoryItem->stockable_id }}" @selected($selectedId === (string) $inventoryItem->id)>{{ $inventoryItem->product->name }}@if($identifier) — {{ $identifier }}@endif — {{ $inventoryItem->product->unit->name }}</option>
+                    <option value="{{ $inventoryItem->id }}" data-source-key="{{ $inventoryItem->stockable_type }}:{{ $inventoryItem->stockable_id }}" data-product-search="{{ implode(' ', array_filter([$inventoryItem->product->name, $inventoryItem->product->commercial_name, $inventoryItem->product->code, $inventoryItem->product->barcode])) }}" @selected($selectedId === (string) $inventoryItem->id)>{{ $inventoryItem->product->name }}@if($inventoryItem->product->commercial_name) — Comercial: {{ $inventoryItem->product->commercial_name }}@endif @if($identifier) — {{ $identifier }}@endif — {{ $inventoryItem->product->unit->name }}</option>
                 @endforeach
             </select>
             @if($productError)<div class="invalid-feedback">{{ $productError }}</div>@endif

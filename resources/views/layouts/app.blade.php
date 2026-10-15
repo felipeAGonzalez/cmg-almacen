@@ -72,6 +72,10 @@
                         <i class="bi bi-building" aria-hidden="true"></i>
                         <span>Almacenes</span>
                     </a>
+                    <a href="{{ route('reports.patient-vouchers.index') }}" class="admin-nav-link {{ request()->routeIs('reports.patient-vouchers.*') ? 'active' : '' }}">
+                        <i class="bi bi-collection" aria-hidden="true"></i>
+                        <span>Concentrado de vales</span>
+                    </a>
                     @php($outboundWarehouses = \App\Models\Warehouse::query()->orderBy('name')->get())
                     @foreach ($outboundWarehouses as $outboundWarehouse)
                         <a href="{{ route('warehouses.outbounds.index', $outboundWarehouse) }}" class="admin-nav-link {{ request()->routeIs('warehouses.outbounds.*') && request()->route('warehouse')?->is($outboundWarehouse) ? 'active' : '' }}">

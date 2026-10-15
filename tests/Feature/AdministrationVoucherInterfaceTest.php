@@ -34,7 +34,7 @@ class AdministrationVoucherInterfaceTest extends TestCase
         $admin = User::factory()->administrator()->create();
         $warehouse = Warehouse::factory()->create();
         $cabinet = Cabinet::factory()->for($warehouse)->create(['name' => 'Gabinete destino']);
-        $shared = Product::factory()->create(['name' => 'Producto compartido']);
+        $shared = Product::factory()->create(['name' => 'Producto compartido', 'commercial_name' => 'Marca Admin']);
         $warehouseOnly = Product::factory()->create(['name' => 'Sólo almacén']);
         InventoryItem::factory()->forWarehouse($warehouse)->for($shared)->create();
         InventoryItem::factory()->forWarehouse($warehouse)->for($warehouseOnly)->create();
@@ -43,8 +43,10 @@ class AdministrationVoucherInterfaceTest extends TestCase
         $this->actingAs($admin)->get(route('administration-vouchers.create'))->assertOk()
             ->assertSee('Gabinete destino')->assertSee('Producto compartido')->assertSee('Selecciona un almacén')
             ->assertSee('Selecciona un gabinete')->assertSee('Agregar producto')
+            ->assertSee('Marca Admin')->assertSee('Buscar por ingrediente activo o nombre comercial')
+            ->assertSee('data-product-search-select', false)
             ->assertSee('function syncRows()', false)
-            ->assertSee("document.querySelector('#add-admin-item').onclick=()=>{syncRows();", false);
+            ->assertSee("document.querySelector('#add-admin-item').onclick", false);
     }
 
     public function test_index_is_scoped_and_show_is_read_only_with_pending_stock(): void
