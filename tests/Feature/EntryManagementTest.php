@@ -262,7 +262,9 @@ class EntryManagementTest extends TestCase
         $entry = Entry::query()->with('items')->firstOrFail();
         $this->assertSame('30.7500000', $entry->items[0]->subtotal);
         $this->assertSame('10.3125000', $entry->items[1]->subtotal);
-        $this->assertSame('41.0625000', $entry->total);
+        $this->assertSame('41.0625000', $entry->subtotal);
+        $this->assertSame('6.5700000', $entry->vat);
+        $this->assertSame('47.6325000', $entry->total);
     }
 
     public function test_invalid_second_item_leaves_no_partial_records(): void

@@ -292,12 +292,7 @@ document.addEventListener('DOMContentLoaded', function () {
         return [String(item.id), item];
     }));
     const money = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
-    const unitMoney = new Intl.NumberFormat('es-MX', {
-        style: 'currency',
-        currency: 'MXN',
-        minimumFractionDigits: 4,
-        maximumFractionDigits: 4,
-    });
+    const unitMoney = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
 
     function calculateTotals() {
         let total = 0;
@@ -310,7 +305,10 @@ document.addEventListener('DOMContentLoaded', function () {
             row.querySelector('[data-entry-subtotal]').textContent = money.format(totalCost);
             total += totalCost;
         });
-        entryItems.querySelector('[data-entry-total]').textContent = money.format(total);
+        const vat = total * 0.16;
+        entryItems.querySelector('[data-entry-subtotal-total]').textContent = money.format(total);
+        entryItems.querySelector('[data-entry-vat]').textContent = money.format(vat);
+        entryItems.querySelector('[data-entry-total]').textContent = money.format(total + vat);
     }
 
     function updateExpiration(row) {

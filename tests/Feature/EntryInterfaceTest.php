@@ -58,7 +58,7 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('INV-001')
             ->assertSee($supplier->name)
             ->assertSee('1 partida')
-            ->assertSee('$30.75')
+            ->assertSee('$35.67')
             ->assertSee('Ver detalle')
             ->assertDontSee('Editar')
             ->assertDontSee('Eliminar');
@@ -112,7 +112,10 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('Costo total de la partida')
             ->assertSee('Costo por pieza')
             ->assertSee('data-entry-total-cost', false)
-            ->assertSee('data-entry-unit-cost-display', false);
+            ->assertSee('data-entry-unit-cost-display', false)
+            ->assertSee('Subtotal')
+            ->assertSee('IVA (16%)')
+            ->assertSee('Total de la factura');
     }
 
     public function test_validation_errors_preserve_multiple_submitted_items(): void
@@ -162,6 +165,9 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('FAB-900')
             ->assertSee('31/12/2027')
             ->assertSee('$10.31')
+            ->assertSee('IVA (16%)')
+            ->assertSee('$1.65')
+            ->assertSee('$11.96')
             ->assertSee('Volver a entradas')
             ->assertDontSee('Editar')
             ->assertDontSee('Eliminar');

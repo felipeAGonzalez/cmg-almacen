@@ -41,8 +41,8 @@
                     <tr>
                         <td><strong>{{ $item->inventoryItem->product->name }}</strong></td>
                         <td>{{ $item->inventoryItem->product->unit->name }}</td>
-                        <td>{{ rtrim(rtrim($item->quantity, '0'), '.') }}</td>
-                        <td class="text-nowrap">${{ number_format((float) $item->unit_cost, 4, '.', ',') }}</td>
+                        <td>{{ \App\Models\InventoryItem::formatQuantity($item->quantity) }}</td>
+                        <td class="text-nowrap">${{ number_format((float) $item->unit_cost, 2, '.', ',') }}</td>
                         <td class="fw-semibold text-nowrap">${{ number_format((float) $item->subtotal, 2, '.', ',') }}</td>
                         <td><code class="entry-lot">{{ $item->batch->internal_lot }}</code></td>
                         <td>{{ $item->batch->manufacturer_lot ?: 'No indicado' }}</td>
@@ -51,6 +51,10 @@
                 @endforeach
             </tbody>
         </table></div>
-        <div class="entry-show-total"><span>Total de la factura</span><strong>${{ number_format((float) $entry->total, 2, '.', ',') }}</strong></div>
+        <div class="entry-show-total flex-column align-items-stretch gap-2">
+            <div class="d-flex justify-content-between gap-3"><span>Subtotal</span><strong>${{ number_format((float) $entry->subtotal, 2, '.', ',') }}</strong></div>
+            <div class="d-flex justify-content-between gap-3"><span>IVA (16%)</span><strong>${{ number_format((float) $entry->vat, 2, '.', ',') }}</strong></div>
+            <div class="d-flex justify-content-between gap-3 border-top pt-2"><span>Total de la factura</span><strong>${{ number_format((float) $entry->total, 2, '.', ',') }}</strong></div>
+        </div>
     </section>
 @endsection

@@ -97,7 +97,11 @@
                         @include('entries._item', ['index' => $index, 'item' => $submittedItem, 'inventoryItems' => $inventoryItems])
                     @endforeach
                 </div>
-                <div class="entry-total mt-3"><span>Total de la factura</span><strong data-entry-total>$0.00</strong></div>
+                <div class="entry-total flex-column align-items-stretch gap-2 mt-3">
+                    <div class="d-flex justify-content-between gap-3"><span>Subtotal</span><strong data-entry-subtotal-total>$0.00</strong></div>
+                    <div class="d-flex justify-content-between gap-3"><span>IVA (16%)</span><strong data-entry-vat>$0.00</strong></div>
+                    <div class="d-flex justify-content-between gap-3 border-top pt-2"><span>Total de la factura</span><strong data-entry-total>$0.00</strong></div>
+                </div>
             </div>
         </section>
 

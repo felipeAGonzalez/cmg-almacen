@@ -23,13 +23,13 @@
     <div class="d-grid gap-3">
         @foreach($transfer->items as $item)
             <section class="admin-card overflow-hidden transfer-detail-product">
-                <div class="admin-card-header d-flex flex-wrap justify-content-between gap-2"><div><h3 class="h6 fw-bold mb-1">{{ $item->sourceInventoryItem->product->name }}</h3><p class="small text-body-secondary mb-0">Unidad: {{ $item->sourceInventoryItem->product->unit->name }}</p></div><span class="warehouse-badge">Cantidad transferida: {{ rtrim(rtrim($item->requested_quantity, '0'), '.') }}</span></div>
+                <div class="admin-card-header d-flex flex-wrap justify-content-between gap-2"><div><h3 class="h6 fw-bold mb-1">{{ $item->sourceInventoryItem->product->name }}</h3><p class="small text-body-secondary mb-0">Unidad: {{ $item->sourceInventoryItem->product->unit->name }}</p></div><span class="warehouse-badge">Cantidad transferida: {{ \App\Models\InventoryItem::formatQuantity($item->requested_quantity) }}</span></div>
                 <div class="table-responsive"><table class="table admin-table align-middle"><thead><tr><th>Lote interno origen</th><th>Lote fabricante</th><th>Caducidad</th><th>Cantidad tomada</th><th>Lote en gabinete</th></tr></thead><tbody>
                     @foreach($item->allocations as $allocation)<tr>
                         <td><code class="entry-lot">{{ $allocation->sourceBatch->internal_lot }}</code></td>
                         <td>{{ $allocation->sourceBatch->manufacturer_lot ?: 'No indicado' }}</td>
                         <td class="text-nowrap">{{ $allocation->sourceBatch->expiration_date?->format('d/m/Y') ?: 'Sin caducidad' }}</td>
-                        <td>{{ rtrim(rtrim($allocation->quantity, '0'), '.') }}</td>
+                        <td>{{ \App\Models\InventoryItem::formatQuantity($allocation->quantity) }}</td>
                         <td><code class="entry-lot">{{ $allocation->destinationBatch->internal_lot }}</code></td>
                     </tr>@endforeach
                 </tbody></table></div>
