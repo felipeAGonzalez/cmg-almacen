@@ -48,6 +48,61 @@ class AdministrationVoucherManagementTest extends TestCase
         app(AdministrationVoucherService::class)->create($admin, $warehouse, $cabinet, [['product_id' => $other->id, 'quantity' => 1]]);
     }
 
+    public function test_admin_can_replace_a_pending_request_before_fulfillment(): void
+    {
+        [$warehouse, $cabinet, $product] = $this->context();
+        $replacement = Product::factory()->create();
+        InventoryItem::factory()->forWarehouse($warehouse)->for($replacement)->create();
+        InventoryItem::factory()->forCabinet($cabinet)->for($replacement)->create();
+        $admin = User::factory()->administrator()->create();
+        $voucher = app(AdministrationVoucherService::class)->create(
+            $admin,
+            $warehouse,
+            $cabinet,
+            [['product_id' => $product->id, 'quantity' => 10]],
+            'Nota original',
+        );
+        $requestedAt = $voucher->requested_at;
+
+        $this->actingAs($admin)->put(route('administration-vouchers.update', $voucher), [
+            'warehouse_id' => $warehouse->id,
+            'cabinet_id' => $cabinet->id,
+            'items' => [['product_id' => $replacement->id, 'quantity' => '4.500']],
+            'notes' => 'Pedido corregido',
+        ])->assertRedirect(route('administration-vouchers.show', $voucher))
+            ->assertSessionHasNoErrors();
+
+        $fresh = $voucher->fresh('items');
+        $this->assertSame($admin->id, $fresh->requested_by);
+        $this->assertTrue($requestedAt->equalTo($fresh->requested_at));
+        $this->assertSame('Pedido corregido', $fresh->notes);
+        $this->assertCount(1, $fresh->items);
+        $this->assertSame($replacement->id, $fresh->items->first()->product_id);
+        $this->assertSame('4.500', $fresh->items->first()->requested_quantity);
+        $this->assertSame('0.000', $fresh->items->first()->supplied_quantity);
+    }
+
+    public function test_manager_and_partially_supplied_voucher_cannot_be_edited(): void
+    {
+        [$warehouse, $cabinet, $product] = $this->context();
+        $admin = User::factory()->administrator()->create();
+        $manager = User::factory()->warehouseManager()->create();
+        $manager->warehouses()->attach($warehouse);
+        $voucher = app(AdministrationVoucherService::class)->create($admin, $warehouse, $cabinet, [['product_id' => $product->id, 'quantity' => 10]]);
+        $payload = [
+            'warehouse_id' => $warehouse->id,
+            'cabinet_id' => $cabinet->id,
+            'items' => [['product_id' => $product->id, 'quantity' => 5]],
+        ];
+
+        $this->actingAs($manager)->put(route('administration-vouchers.update', $voucher), $payload)->assertForbidden();
+
+        $voucher->update(['status' => AdministrationVoucherStatus::PARTIALLY_SUPPLIED]);
+        $this->actingAs($admin)->get(route('administration-vouchers.edit', $voucher))->assertForbidden();
+        $this->put(route('administration-vouchers.update', $voucher), $payload)->assertForbidden();
+        $this->assertSame('10.000', $voucher->items->first()->fresh()->requested_quantity);
+    }
+
     public function test_partial_then_complete_fulfillment_creates_traceable_transfers(): void
     {
         [$warehouse, $cabinet, $product, $source, $destination] = $this->context();

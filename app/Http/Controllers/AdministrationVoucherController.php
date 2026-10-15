@@ -6,10 +6,12 @@ use App\Enums\AdministrationVoucherStatus;
 use App\Enums\UserRole;
 use App\Http\Requests\RejectAdministrationVoucherRequest;
 use App\Http\Requests\StoreAdministrationVoucherRequest;
+use App\Http\Requests\UpdateAdministrationVoucherRequest;
 use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\Warehouse;
 use App\Services\AdministrationVoucherService;
+use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\Gate;
@@ -49,9 +51,8 @@ class AdministrationVoucherController extends Controller
     public function create(): View
     {
         Gate::authorize('create', AdministrationVoucher::class);
-        $warehouses = Warehouse::query()->with(['inventoryItems.product.unit', 'cabinets.inventoryItems.product.unit'])->orderBy('name')->get();
 
-        return view('administration-vouchers.create', compact('warehouses'));
+        return view('administration-vouchers.create', ['warehouses' => $this->warehousesForForm()]);
     }
 
     public function store(StoreAdministrationVoucherRequest $request, AdministrationVoucherService $service): RedirectResponse
@@ -63,6 +64,34 @@ class AdministrationVoucherController extends Controller
         $voucher = $service->create($request->user(), $warehouse, $cabinet, $data['items'], $data['notes'] ?? null);
 
         return redirect()->route('administration-vouchers.show', $voucher)->with('success', 'El vale de Administración se creó correctamente.');
+    }
+
+    public function edit(AdministrationVoucher $administrationVoucher): View
+    {
+        Gate::authorize('update', $administrationVoucher);
+        $administrationVoucher->load('items');
+
+        return view('administration-vouchers.create', [
+            'voucher' => $administrationVoucher,
+            'warehouses' => $this->warehousesForForm(),
+        ]);
+    }
+
+    public function update(UpdateAdministrationVoucherRequest $request, AdministrationVoucher $administrationVoucher, AdministrationVoucherService $service): RedirectResponse
+    {
+        Gate::authorize('update', $administrationVoucher);
+        $data = $request->validated();
+        $service->update(
+            $administrationVoucher,
+            $request->user(),
+            Warehouse::findOrFail($data['warehouse_id']),
+            Cabinet::findOrFail($data['cabinet_id']),
+            $data['items'],
+            $data['notes'] ?? null,
+        );
+
+        return redirect()->route('administration-vouchers.show', $administrationVoucher)
+            ->with('success', 'El vale de Administración se actualizó correctamente.');
     }
 
     public function show(AdministrationVoucher $administrationVoucher): View
@@ -89,5 +118,14 @@ class AdministrationVoucherController extends Controller
         $service->cancel($administrationVoucher, $request->user());
 
         return back()->with('success', 'Vale cancelado correctamente.');
+    }
+
+    /** @return Collection<int, Warehouse> */
+    private function warehousesForForm(): Collection
+    {
+        return Warehouse::query()
+            ->with(['inventoryItems.product.unit', 'cabinets.inventoryItems.product.unit'])
+            ->orderBy('name')
+            ->get();
     }
 }

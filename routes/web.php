@@ -67,6 +67,8 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::get('administration/vouchers', [AdministrationVoucherController::class, 'index'])->name('administration-vouchers.index');
     Route::get('administration/vouchers/create', [AdministrationVoucherController::class, 'create'])->name('administration-vouchers.create');
     Route::post('administration/vouchers', [AdministrationVoucherController::class, 'store'])->name('administration-vouchers.store');
+    Route::get('administration/vouchers/{administrationVoucher}/edit', [AdministrationVoucherController::class, 'edit'])->name('administration-vouchers.edit');
+    Route::put('administration/vouchers/{administrationVoucher}', [AdministrationVoucherController::class, 'update'])->name('administration-vouchers.update');
     Route::get('administration/vouchers/{administrationVoucher}', [AdministrationVoucherController::class, 'show'])->name('administration-vouchers.show');
     Route::post('administration/vouchers/{administrationVoucher}/fulfillments', [AdministrationVoucherFulfillmentController::class, 'store'])->name('administration-vouchers.fulfillments.store');
     Route::post('administration/vouchers/{administrationVoucher}/reject', [AdministrationVoucherController::class, 'reject'])->name('administration-vouchers.reject');

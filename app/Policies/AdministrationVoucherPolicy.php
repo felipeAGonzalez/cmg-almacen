@@ -2,6 +2,7 @@
 
 namespace App\Policies;
 
+use App\Enums\AdministrationVoucherStatus;
 use App\Enums\UserRole;
 use App\Models\AdministrationVoucher;
 use App\Models\User;
@@ -21,6 +22,11 @@ class AdministrationVoucherPolicy
     public function create(User $user): bool
     {
         return $user->isAdmin();
+    }
+
+    public function update(User $user, AdministrationVoucher $voucher): bool
+    {
+        return $user->isAdmin() && $voucher->status === AdministrationVoucherStatus::PENDING;
     }
 
     public function fulfill(User $user, AdministrationVoucher $voucher): bool

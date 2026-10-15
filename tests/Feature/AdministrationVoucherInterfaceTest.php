@@ -62,4 +62,34 @@ class AdministrationVoucherInterfaceTest extends TestCase
         $response->assertOk()->assertSee('Solución clínica')->assertSee('Surtir vale')->assertSee('Disponible:')->assertSee('Historial de reposiciones')->assertDontSee('Editar')->assertDontSee('Eliminar');
         $this->get(route('administration-vouchers.index'))->assertOk()->assertSee('#'.$voucher->id);
     }
+
+    public function test_admin_can_open_prefilled_edit_form_only_for_pending_voucher(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create(['name' => 'Almacén editable']);
+        $cabinet = Cabinet::factory()->for($warehouse)->create(['name' => 'Gabinete editable']);
+        $product = Product::factory()->create(['name' => 'Producto editable']);
+        InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create();
+        InventoryItem::factory()->forCabinet($cabinet)->for($product)->create();
+        $voucher = AdministrationVoucher::create([
+            'requested_by' => $admin->id,
+            'warehouse_id' => $warehouse->id,
+            'cabinet_id' => $cabinet->id,
+            'status' => AdministrationVoucherStatus::PENDING,
+            'requested_at' => now(),
+            'notes' => 'Corregir cantidades',
+        ]);
+        $voucher->items()->create(['product_id' => $product->id, 'requested_quantity' => '7.500', 'supplied_quantity' => 0]);
+
+        $this->actingAs($admin)->get(route('administration-vouchers.show', $voucher))
+            ->assertOk()->assertSee('Modificar pedido');
+        $this->get(route('administration-vouchers.edit', $voucher))
+            ->assertOk()->assertSee('Modificar vale de Administración #'.$voucher->id)
+            ->assertSee('Almacén editable')->assertSee('Gabinete editable')
+            ->assertSee('Producto editable')->assertSee('7.500')
+            ->assertSee('Corregir cantidades')->assertSee('Guardar cambios');
+
+        $voucher->update(['status' => AdministrationVoucherStatus::CANCELLED]);
+        $this->get(route('administration-vouchers.show', $voucher))->assertOk()->assertDontSee('Modificar pedido');
+    }
 }

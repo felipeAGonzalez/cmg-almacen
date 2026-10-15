@@ -18,6 +18,47 @@ class AdministrationVoucherService
     public function create(User $requester, Warehouse $warehouse, Cabinet $cabinet, array $items, ?string $notes = null): AdministrationVoucher
     {
         Gate::forUser($requester)->authorize('create', AdministrationVoucher::class);
+        $this->validateRequest($warehouse, $cabinet, $items);
+
+        return DB::transaction(function () use ($requester, $warehouse, $cabinet, $items, $notes): AdministrationVoucher {
+            $voucher = AdministrationVoucher::query()->create([
+                'requested_by' => $requester->getKey(), 'warehouse_id' => $warehouse->getKey(), 'cabinet_id' => $cabinet->getKey(),
+                'status' => AdministrationVoucherStatus::PENDING, 'requested_at' => now(), 'notes' => $notes,
+            ]);
+            $this->replaceItems($voucher, $items);
+            $this->notifications->notifyCreated($voucher);
+
+            return $voucher->load('items');
+        });
+    }
+
+    public function update(AdministrationVoucher $voucher, User $user, Warehouse $warehouse, Cabinet $cabinet, array $items, ?string $notes = null): AdministrationVoucher
+    {
+        Gate::forUser($user)->authorize('update', $voucher);
+
+        return DB::transaction(function () use ($voucher, $warehouse, $cabinet, $items, $notes): AdministrationVoucher {
+            $locked = AdministrationVoucher::query()->lockForUpdate()->findOrFail($voucher->getKey());
+            if ($locked->status !== AdministrationVoucherStatus::PENDING || $locked->transfers()->exists()) {
+                throw ValidationException::withMessages(['status' => 'Sólo se puede modificar un vale pendiente que no tenga reposiciones.']);
+            }
+
+            $this->validateRequest($warehouse, $cabinet, $items);
+            $this->notifications->closeActions($locked);
+            $locked->update([
+                'warehouse_id' => $warehouse->getKey(),
+                'cabinet_id' => $cabinet->getKey(),
+                'notes' => $notes,
+            ]);
+            $locked->items()->delete();
+            $this->replaceItems($locked, $items);
+            $this->notifications->notifyCreated($locked);
+
+            return $locked->load('items');
+        });
+    }
+
+    private function validateRequest(Warehouse $warehouse, Cabinet $cabinet, array $items): void
+    {
         if ($cabinet->warehouse_id !== $warehouse->getKey()) {
             throw ValidationException::withMessages(['cabinet_id' => 'El gabinete debe pertenecer al almacén seleccionado.']);
         }
@@ -35,19 +76,17 @@ class AdministrationVoucherService
         if ($warehouseProducts->unique()->count() !== $productIds->unique()->count() || $cabinetProducts->unique()->count() !== $productIds->unique()->count()) {
             throw ValidationException::withMessages(['items' => 'Uno de los productos no está configurado en ambos inventarios.']);
         }
+    }
 
-        return DB::transaction(function () use ($requester, $warehouse, $cabinet, $items, $notes): AdministrationVoucher {
-            $voucher = AdministrationVoucher::query()->create([
-                'requested_by' => $requester->getKey(), 'warehouse_id' => $warehouse->getKey(), 'cabinet_id' => $cabinet->getKey(),
-                'status' => AdministrationVoucherStatus::PENDING, 'requested_at' => now(), 'notes' => $notes,
+    private function replaceItems(AdministrationVoucher $voucher, array $items): void
+    {
+        foreach ($items as $item) {
+            $voucher->items()->create([
+                'product_id' => $item['product_id'],
+                'requested_quantity' => $item['quantity'],
+                'supplied_quantity' => '0',
             ]);
-            foreach ($items as $item) {
-                $voucher->items()->create(['product_id' => $item['product_id'], 'requested_quantity' => $item['quantity'], 'supplied_quantity' => '0']);
-            }
-            $this->notifications->notifyCreated($voucher);
-
-            return $voucher->load('items');
-        });
+        }
     }
 
     public function reject(AdministrationVoucher $voucher, User $user, string $reason): AdministrationVoucher
