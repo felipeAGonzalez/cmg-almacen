@@ -27,6 +27,7 @@ class InventoryKardexController extends Controller
                 InventoryKardexService::ENTRY => 'Entrada',
                 InventoryKardexService::TRANSFER_OUT => 'Transferencia enviada',
                 InventoryKardexService::MANUAL_OUTBOUND => 'Salida manual',
+                InventoryKardexService::MANUAL_OUTBOUND_RETURN => 'Devolución manual — Entrada',
                 InventoryKardexService::ADJUSTMENT_IN => 'Ajuste positivo',
                 InventoryKardexService::ADJUSTMENT_OUT => 'Ajuste negativo',
                 InventoryKardexService::NURSING_VOUCHER_WAREHOUSE_OUT => 'Vale de Enfermería — Salida de almacén',

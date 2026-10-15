@@ -88,6 +88,11 @@ class Warehouse extends Model
         return $this->hasMany(InventoryOutbound::class);
     }
 
+    public function inventoryOutboundReturns(): HasMany
+    {
+        return $this->hasMany(InventoryOutboundReturn::class);
+    }
+
     public function nursingVouchers(): HasMany
     {
         return $this->hasMany(NursingVoucher::class);

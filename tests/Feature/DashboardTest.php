@@ -63,9 +63,9 @@ class DashboardTest extends TestCase
 
         $response = $this->actingAs(User::factory()->administrator()->create())->get(route('home'));
         $response->assertOk()->assertSeeInOrder(['1', 'Stock crítico'])->assertSeeInOrder(['1', 'Stock bajo'])
-            ->assertSeeInOrder(['1', 'Lotes vencidos con existencia'])
-            ->assertSee(route('inventory.index', ['stock_status' => 'critical']), false)
-            ->assertSee(route('inventory.index', ['expiration_status' => 'expired']), false);
+            ->assertSeeInOrder(['1', 'Lotes vencidos'])
+            ->assertSee(route('inventory.index', ['inventory_scope' => 'warehouse:'.$warehouse->id, 'stock_status' => 'critical']))
+            ->assertSee(route('inventory.index', ['inventory_scope' => 'warehouse:'.$warehouse->id, 'expiration_status' => 'expired']));
     }
 
     public function test_manager_only_sees_assigned_warehouse_counts_and_attention_vouchers(): void
@@ -83,6 +83,31 @@ class DashboardTest extends TestCase
         $this->actingAs($manager)->get(route('home'))->assertOk()->assertSee('Almacén asignado')
             ->assertSee('Vales por atender')->assertSee('#'.$visible->id)->assertDontSee('#'.$hidden->id)
             ->assertDontSee('Resumen global');
+    }
+
+    public function test_stock_is_separated_by_warehouse_and_cabinet_with_role_scope(): void
+    {
+        $manager = User::factory()->warehouseManager()->create();
+        $assigned = Warehouse::factory()->create(['name' => 'Almacén Central']);
+        $foreign = Warehouse::factory()->create(['name' => 'Almacén Oculto']);
+        $manager->warehouses()->attach($assigned);
+        $cabinet = Cabinet::factory()->for($assigned)->create(['name' => 'Gabinete Urgencias']);
+        $otherCabinet = Cabinet::factory()->for($assigned)->create(['name' => 'Gabinete Hospitalización']);
+        Cabinet::factory()->for($foreign)->create(['name' => 'Gabinete Oculto']);
+
+        InventoryItem::factory()->forWarehouse($assigned)->for(Product::factory()->create(['requires_expiration' => true]))->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
+        InventoryItem::factory()->forCabinet($cabinet)->for(Product::factory()->create(['requires_expiration' => true]))->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
+        InventoryItem::factory()->forCabinet($otherCabinet)->for(Product::factory()->create(['requires_expiration' => true]))->create(['minimum_stock' => 10, 'maximum_stock' => 20]);
+
+        $this->actingAs($manager)->get(route('home'))
+            ->assertOk()->assertSee('Stock por ubicación')->assertSee('Almacén Central')
+            ->assertSee('Gabinete Urgencias')->assertSee('Gabinete Hospitalización')
+            ->assertDontSee('Almacén Oculto')->assertDontSee('Gabinete Oculto')
+            ->assertSee(route('inventory.index', ['inventory_scope' => 'warehouse:'.$assigned->id]), false)
+            ->assertSee(route('inventory.index', ['inventory_scope' => 'cabinet:'.$cabinet->id]), false);
+
+        $this->actingAs(User::factory()->administrator()->create())->get(route('home'))
+            ->assertOk()->assertSee('Almacén Central')->assertSee('Almacén Oculto')->assertSee('Gabinete Oculto');
     }
 
     public function test_nurse_sees_own_operational_context_and_only_own_recent_vouchers(): void

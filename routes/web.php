@@ -15,6 +15,7 @@ use App\Http\Controllers\HospitalNurseOptionsController;
 use App\Http\Controllers\InventoryAdjustmentController;
 use App\Http\Controllers\InventoryKardexController;
 use App\Http\Controllers\InventoryOutboundController;
+use App\Http\Controllers\InventoryOutboundReturnController;
 use App\Http\Controllers\InventoryOverviewController;
 use App\Http\Controllers\InventoryTransferController;
 use App\Http\Controllers\LocationController;
@@ -112,6 +113,12 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::resource('warehouses', WarehouseController::class)
         ->except('show')
         ->middleware('role:administrator');
+
+    Route::controller(InventoryOutboundReturnController::class)->middleware('entry.access')->group(function (): void {
+        Route::get('warehouses/{warehouse}/entries/returns/create', 'create')->name('warehouses.entries.returns.create');
+        Route::post('warehouses/{warehouse}/entries/returns', 'store')->name('warehouses.entries.returns.store');
+        Route::get('warehouses/{warehouse}/entries/returns/{inventoryOutboundReturn}', 'show')->name('warehouses.entries.returns.show');
+    });
 
     Route::resource('warehouses.entries', EntryController::class)
         ->only(['index', 'create', 'store', 'show'])

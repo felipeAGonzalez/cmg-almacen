@@ -20,10 +20,22 @@
             <p>Consulta las entradas de mercancía registradas en este almacén.</p>
             <span class="badge text-bg-light border"><i class="bi bi-building me-1" aria-hidden="true"></i>Almacén: {{ $warehouse->name }}</span>
         </div>
-        <a href="{{ route('warehouses.entries.create', $warehouse) }}" class="btn btn-primary">
-            <i class="bi bi-receipt me-2" aria-hidden="true"></i>Registrar entrada
-        </a>
+        <div class="d-flex flex-wrap gap-2">
+            <a href="{{ route('warehouses.entries.returns.create', $warehouse) }}" class="btn btn-outline-primary"><i class="bi bi-arrow-return-left me-2"></i>Registrar devolución manual</a>
+            <a href="{{ route('warehouses.entries.create', $warehouse) }}" class="btn btn-primary"><i class="bi bi-receipt me-2" aria-hidden="true"></i>Registrar entrada</a>
+        </div>
     </div>
+
+    @if($manualReturns->isNotEmpty())
+        <section class="admin-card overflow-hidden mb-4">
+            <div class="admin-card-header"><h3 class="h6 fw-bold mb-1">Devoluciones manuales recientes</h3><p class="small text-body-secondary mb-0">Mercancía reintegrada desde salidas manuales.</p></div>
+            <div class="table-responsive"><table class="table admin-table align-middle mb-0"><thead><tr><th>Fecha</th><th>Salida original</th><th>Paciente / destino</th><th>Partidas</th><th>Recibió</th><th></th></tr></thead><tbody>
+                @foreach($manualReturns as $return)
+                    <tr><td>{{ $return->received_at->format('d/m/Y H:i') }}</td><td>#{{ $return->inventory_outbound_id }}</td><td>{{ $return->outbound->patient_name ?: $return->outbound->reason->label() }}</td><td>{{ $return->items_count }}</td><td>{{ $return->receivedBy->name }} {{ $return->receivedBy->last_name_one }}</td><td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ route('warehouses.entries.returns.show', [$warehouse, $return]) }}">Ver detalle</a></td></tr>
+                @endforeach
+            </tbody></table></div>
+        </section>
+    @endif
 
     <section class="admin-card overflow-hidden" aria-labelledby="entry-list-title">
         <div class="admin-card-header">

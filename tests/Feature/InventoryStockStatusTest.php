@@ -195,7 +195,30 @@ class InventoryStockStatusTest extends TestCase
             ->assertOk()->assertSee('Producto permitido')->assertSee('Producto de gabinete')
             ->assertSee('Gabinete permitido')->assertDontSee('Producto oculto');
 
+        $this->get(route('inventory.index', ['inventory_scope' => 'warehouse:'.$foreign->id]))
+            ->assertSessionHasErrors('inventory_scope');
+
         $this->actingAs(User::factory()->nurse()->create())->get(route('inventory.index'))->assertForbidden();
+    }
+
+    public function test_inventory_overview_can_filter_a_specific_warehouse_or_cabinet(): void
+    {
+        $warehouse = Warehouse::factory()->create(['name' => 'Almacén Central']);
+        $otherWarehouse = Warehouse::factory()->create(['name' => 'Almacén Norte']);
+        $cabinet = Cabinet::factory()->for($warehouse)->create(['name' => 'Gabinete Urgencias']);
+        $otherCabinet = Cabinet::factory()->for($warehouse)->create(['name' => 'Gabinete Piso 2']);
+        InventoryItem::factory()->forWarehouse($warehouse)->for(Product::factory()->create(['name' => 'Producto del almacén']))->create();
+        InventoryItem::factory()->forCabinet($cabinet)->for(Product::factory()->create(['name' => 'Producto de urgencias']))->create();
+        InventoryItem::factory()->forCabinet($otherCabinet)->for(Product::factory()->create(['name' => 'Producto de piso']))->create();
+        InventoryItem::factory()->forWarehouse($otherWarehouse)->for(Product::factory()->create(['name' => 'Producto del norte']))->create();
+        $admin = User::factory()->administrator()->create();
+
+        $this->actingAs($admin)->get(route('inventory.index', ['inventory_scope' => 'warehouse:'.$warehouse->id]))
+            ->assertOk()->assertSee('Producto del almacén')->assertDontSee('Producto de urgencias')->assertDontSee('Producto de piso')->assertDontSee('Producto del norte');
+
+        $this->get(route('inventory.index', ['inventory_scope' => 'cabinet:'.$cabinet->id]))
+            ->assertOk()->assertSee('Producto de urgencias')->assertDontSee('Producto del almacén')->assertDontSee('Producto de piso')->assertDontSee('Producto del norte')
+            ->assertSee('Gabinete — Almacén Central / Gabinete Urgencias');
     }
 
     private function assertStatus(string $stock, string $minimum, string $maximum, string $expected): void

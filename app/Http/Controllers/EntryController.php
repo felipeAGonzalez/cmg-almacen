@@ -29,7 +29,14 @@ class EntryController extends Controller
             ->orderByDesc('id')
             ->paginate(15);
 
-        return view('entries.index', compact('warehouse', 'entries'));
+        $manualReturns = $warehouse->inventoryOutboundReturns()
+            ->with(['outbound', 'receivedBy'])
+            ->withCount('items')
+            ->orderByDesc('received_at')
+            ->limit(10)
+            ->get();
+
+        return view('entries.index', compact('warehouse', 'entries', 'manualReturns'));
     }
 
     public function create(Warehouse $warehouse): View

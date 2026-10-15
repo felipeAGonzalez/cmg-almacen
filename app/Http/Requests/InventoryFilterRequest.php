@@ -17,6 +17,7 @@ class InventoryFilterRequest extends FormRequest
     {
         return [
             'search' => ['nullable', 'string', 'max:120'],
+            'inventory_scope' => ['nullable', 'string', 'regex:/^(warehouse|cabinet):[1-9][0-9]*$/'],
             'stock_status' => ['nullable', Rule::in(['critical', 'low', 'healthy', 'without_expiration'])],
             'expiration_status' => ['nullable', Rule::in(['expired', 'valid', 'without_expiration'])],
             'expiration_from' => ['nullable', 'date_format:Y-m-d'],
@@ -27,6 +28,7 @@ class InventoryFilterRequest extends FormRequest
     public function messages(): array
     {
         return [
+            'inventory_scope.regex' => 'El inventario seleccionado no es válido.',
             'expiration_to.after_or_equal' => 'La fecha final de caducidad debe ser igual o posterior a la fecha inicial.',
         ];
     }

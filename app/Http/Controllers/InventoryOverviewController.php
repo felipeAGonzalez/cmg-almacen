@@ -7,7 +7,10 @@ use App\Http\Requests\InventoryFilterRequest;
 use App\Models\Cabinet;
 use App\Models\InventoryItem;
 use App\Models\Product;
+use App\Models\Warehouse;
 use Illuminate\Database\Eloquent\Builder;
+use Illuminate\Support\Collection;
+use Illuminate\Validation\ValidationException;
 use Illuminate\View\View;
 
 class InventoryOverviewController extends Controller
@@ -19,6 +22,9 @@ class InventoryOverviewController extends Controller
         abort_unless($user->isAdmin() || $user->role === UserRole::WAREHOUSE_MANAGER, 403);
 
         $query = InventoryItem::query();
+        $warehouses = $user->isAdmin()
+            ? Warehouse::query()->with(['cabinets' => fn ($query) => $query->orderBy('name')])->orderBy('name')->get()
+            : $user->warehouses()->with(['cabinets' => fn ($query) => $query->orderBy('name')])->orderBy('name')->get();
 
         if (! $user->isAdmin()) {
             $warehouseIds = $user->warehouses()->select('warehouses.id');
@@ -33,6 +39,15 @@ class InventoryOverviewController extends Controller
         }
 
         $filters = $request->validated();
+        $inventoryContexts = $this->inventoryContexts($warehouses);
+        if ($scope = $filters['inventory_scope'] ?? null) {
+            if (! $inventoryContexts->has($scope)) {
+                throw ValidationException::withMessages(['inventory_scope' => 'El inventario seleccionado no está disponible para tu usuario.']);
+            }
+
+            [$stockableType, $stockableId] = explode(':', $scope, 2);
+            $query->where('stockable_type', $stockableType)->where('stockable_id', (int) $stockableId);
+        }
         $inventoryItems = $query
             ->filterInventory($filters)
             ->withStockTotals()
@@ -43,6 +58,21 @@ class InventoryOverviewController extends Controller
             ->paginate(25)
             ->withQueryString();
 
-        return view('inventory.overview', compact('inventoryItems', 'filters'));
+        return view('inventory.overview', compact('inventoryItems', 'filters', 'inventoryContexts'));
+    }
+
+    private function inventoryContexts(Collection $warehouses): Collection
+    {
+        return $warehouses->flatMap(function (Warehouse $warehouse): array {
+            $contexts = [
+                'warehouse:'.$warehouse->id => 'Almacén — '.$warehouse->name,
+            ];
+
+            foreach ($warehouse->cabinets as $cabinet) {
+                $contexts['cabinet:'.$cabinet->id] = 'Gabinete — '.$warehouse->name.' / '.$cabinet->name;
+            }
+
+            return $contexts;
+        });
     }
 }

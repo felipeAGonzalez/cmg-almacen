@@ -52,6 +52,7 @@ class DashboardService
                 ...$this->stockCounts(clone $inventory),
                 ...$this->voucherCounts($nursing, $administration),
             ],
+            'stockLocations' => $this->stockByLocation(),
             'configurationPending' => [
                 'warehouses_without_cabinet' => Warehouse::whereNull('default_nursing_cabinet_id')->count(),
                 'nurses_without_warehouse' => User::where('role', UserRole::NURSE)->whereDoesntHave('warehouses')->count(),
@@ -80,6 +81,7 @@ class DashboardService
         return [
             'assignedWarehouses' => $user->warehouses()->orderBy('name')->get(['warehouses.id', 'warehouses.name']),
             'summary' => [...$this->stockCounts(clone $inventory), ...$this->voucherCounts($nursing, $administration)],
+            'stockLocations' => $this->stockByLocation($warehouseIds),
             'attentionVouchers' => $nursingAttention->concat($administrationAttention)->sortBy('date')->take(10)->values(),
         ];
     }
@@ -132,6 +134,56 @@ class DashboardService
             $query->where(fn (Builder $warehouse) => $warehouse->where('stockable_type', 'warehouse')->whereIn('stockable_id', $warehouseIds))
                 ->orWhere(fn (Builder $cabinet) => $cabinet->where('stockable_type', 'cabinet')->whereIn('stockable_id', Cabinet::select('id')->whereIn('warehouse_id', $warehouseIds)));
         });
+    }
+
+    private function stockByLocation(?Collection $warehouseIds = null): Collection
+    {
+        $warehouses = Warehouse::query()
+            ->when($warehouseIds !== null, fn (Builder $query) => $query->whereIn('id', $warehouseIds))
+            ->with(['cabinets' => fn ($query) => $query->orderBy('name')])
+            ->orderBy('name')
+            ->get(['id', 'name']);
+
+        $allowedWarehouseIds = $warehouses->pluck('id');
+        $inventory = $this->inventoryForWarehouses($allowedWarehouseIds)
+            ->join('products', 'products.id', '=', 'inventory_items.product_id');
+        $usableStock = $this->usableStockSql();
+        $counts = $inventory
+            ->select(['inventory_items.stockable_type', 'inventory_items.stockable_id'])
+            ->selectRaw("SUM(CASE WHEN products.requires_expiration = 1 AND {$usableStock} <= inventory_items.minimum_stock THEN 1 ELSE 0 END) as critical_stock", [today()->toDateString()])
+            ->selectRaw("SUM(CASE WHEN products.requires_expiration = 1 AND {$usableStock} > inventory_items.minimum_stock AND {$usableStock} < inventory_items.maximum_stock THEN 1 ELSE 0 END) as low_stock", [today()->toDateString(), today()->toDateString()])
+            ->groupBy('inventory_items.stockable_type', 'inventory_items.stockable_id')
+            ->get()
+            ->keyBy(fn ($row): string => $row->stockable_type.':'.$row->stockable_id);
+
+        $expired = InventoryBatch::query()
+            ->join('inventory_items', 'inventory_items.id', '=', 'inventory_batches.inventory_item_id')
+            ->join('products', 'products.id', '=', 'inventory_items.product_id')
+            ->where('products.requires_expiration', true)
+            ->where('inventory_batches.available_quantity', '>', 0)
+            ->whereDate('inventory_batches.expiration_date', '<', today())
+            ->whereIn('inventory_items.id', $this->inventoryForWarehouses($allowedWarehouseIds)->select('inventory_items.id'))
+            ->groupBy('inventory_items.stockable_type', 'inventory_items.stockable_id')
+            ->selectRaw('inventory_items.stockable_type, inventory_items.stockable_id, COUNT(*) as expired_batches')
+            ->get()
+            ->keyBy(fn ($row): string => $row->stockable_type.':'.$row->stockable_id);
+
+        $metrics = fn (string $type, int $id): array => [
+            'critical_stock' => (int) ($counts->get($type.':'.$id)?->critical_stock ?? 0),
+            'low_stock' => (int) ($counts->get($type.':'.$id)?->low_stock ?? 0),
+            'expired_batches' => (int) ($expired->get($type.':'.$id)?->expired_batches ?? 0),
+        ];
+
+        return $warehouses->map(fn (Warehouse $warehouse): array => [
+            'warehouse' => $warehouse,
+            'scope' => 'warehouse:'.$warehouse->id,
+            'counts' => $metrics('warehouse', $warehouse->id),
+            'cabinets' => $warehouse->cabinets->map(fn (Cabinet $cabinet): array => [
+                'cabinet' => $cabinet,
+                'scope' => 'cabinet:'.$cabinet->id,
+                'counts' => $metrics('cabinet', $cabinet->id),
+            ]),
+        ]);
     }
 
     /** @return array<string, int> */

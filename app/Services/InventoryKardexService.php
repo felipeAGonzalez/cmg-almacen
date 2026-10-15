@@ -22,6 +22,8 @@ class InventoryKardexService
 
     public const MANUAL_OUTBOUND = 'manual_outbound';
 
+    public const MANUAL_OUTBOUND_RETURN = 'manual_outbound_return';
+
     public const ADJUSTMENT_IN = 'adjustment_in';
 
     public const ADJUSTMENT_OUT = 'adjustment_out';
@@ -39,6 +41,7 @@ class InventoryKardexService
         $query = $this->entryQuery($warehouse)
             ->unionAll($this->transferOutQuery($warehouse))
             ->unionAll($this->manualOutboundQuery($warehouse))
+            ->unionAll($this->manualOutboundReturnQuery($warehouse))
             ->unionAll($this->adjustmentQuery($warehouse))
             ->unionAll($this->nursingVoucherOutQuery($warehouse, self::NURSING_VOUCHER_WAREHOUSE_OUT))
             ->unionAll($this->nursingVoucherReturnQuery($warehouse, self::NURSING_VOUCHER_WAREHOUSE_RETURN));
@@ -200,6 +203,46 @@ class InventoryKardexService
                 'inventory_outbounds.patient_name',
                 'inventory_outbounds.room_number',
                 'inventory_outbound_allocations.id as sort_id',
+            ]);
+    }
+
+    private function manualOutboundReturnQuery(Warehouse $warehouse): Builder
+    {
+        return DB::table('inventory_outbound_return_items')
+            ->join('inventory_outbound_returns', 'inventory_outbound_returns.id', '=', 'inventory_outbound_return_items.inventory_outbound_return_id')
+            ->join('inventory_outbounds', 'inventory_outbounds.id', '=', 'inventory_outbound_returns.inventory_outbound_id')
+            ->join('users', 'users.id', '=', 'inventory_outbound_returns.received_by')
+            ->join('inventory_outbound_allocations', 'inventory_outbound_allocations.id', '=', 'inventory_outbound_return_items.inventory_outbound_allocation_id')
+            ->join('inventory_outbound_items', 'inventory_outbound_items.id', '=', 'inventory_outbound_allocations.inventory_outbound_item_id')
+            ->join('inventory_batches', 'inventory_batches.id', '=', 'inventory_outbound_allocations.inventory_batch_id')
+            ->join('inventory_items', 'inventory_items.id', '=', 'inventory_batches.inventory_item_id')
+            ->join('products', 'products.id', '=', 'inventory_items.product_id')
+            ->join('units', 'units.id', '=', 'products.unit_id')
+            ->where('inventory_outbound_returns.warehouse_id', $warehouse->id)
+            ->whereColumn('inventory_outbound_items.inventory_outbound_id', 'inventory_outbounds.id')
+            ->whereColumn('inventory_outbound_items.inventory_item_id', 'inventory_items.id')
+            ->select([
+                'inventory_outbound_returns.received_at as occurred_at',
+                DB::raw("'manual_outbound_return' as movement_type"),
+                DB::raw("'in' as direction"),
+                'inventory_outbound_return_items.quantity',
+                'inventory_outbound_returns.id as reference_id',
+                DB::raw('null as reference_code'),
+                'inventory_items.id as inventory_item_id',
+                'products.name as product_name',
+                'units.name as unit_name',
+                'inventory_batches.internal_lot',
+                DB::raw('null as source_internal_lot'),
+                'inventory_batches.manufacturer_lot',
+                'inventory_batches.expiration_date',
+                DB::raw('null as source_name'),
+                DB::raw('null as destination_name'),
+                'users.name as actor_name',
+                'users.last_name_one as actor_last_name',
+                DB::raw("'Devolución de salida manual' as detail"),
+                'inventory_outbounds.patient_name',
+                'inventory_outbounds.room_number',
+                'inventory_outbound_return_items.id as sort_id',
             ]);
     }
 
@@ -372,6 +415,7 @@ class InventoryKardexService
             self::TRANSFER_IN => 'Transferencia recibida',
             self::TRANSFER_OUT => 'Transferencia enviada',
             self::MANUAL_OUTBOUND => 'Salida manual',
+            self::MANUAL_OUTBOUND_RETURN => 'Devolución manual — Entrada',
             self::ADJUSTMENT_IN => 'Ajuste positivo',
             self::ADJUSTMENT_OUT => 'Ajuste negativo',
             self::NURSING_VOUCHER_WAREHOUSE_OUT => 'Vale de Enfermería — Salida de almacén',

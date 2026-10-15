@@ -56,11 +56,6 @@
 <section class="mb-4" aria-labelledby="attention-summary">
     <h3 class="h5 mb-3" id="attention-summary">Requiere atención</h3>
     <div class="row g-3">
-        @if (isset($summary['critical_stock']))
-            <div class="col-6 col-xl-3"><a class="card border-danger border-start border-4 shadow-sm h-100 text-decoration-none text-body" href="{{ route('inventory.index', ['stock_status' => 'critical']) }}"><div class="card-body"><div class="fs-3 fw-semibold text-danger">{{ $summary['critical_stock'] }}</div><div>Stock crítico</div><small class="text-primary">Ver productos</small></div></a></div>
-            <div class="col-6 col-xl-3"><a class="card border-warning border-start border-4 shadow-sm h-100 text-decoration-none text-body" href="{{ route('inventory.index', ['stock_status' => 'low']) }}"><div class="card-body"><div class="fs-3 fw-semibold">{{ $summary['low_stock'] }}</div><div>Stock bajo</div><small class="text-primary">Ver productos</small></div></a></div>
-            <div class="col-6 col-xl-3"><a class="card border-secondary border-start border-4 shadow-sm h-100 text-decoration-none text-body" href="{{ route('inventory.index', ['expiration_status' => 'expired']) }}"><div class="card-body"><div class="fs-3 fw-semibold">{{ $summary['expired_batches'] }}</div><div>Lotes vencidos con existencia</div><small class="text-primary">Ver productos</small></div></a></div>
-        @endif
         <div class="col-6 col-xl-3"><a class="card border-0 shadow-sm h-100 text-decoration-none text-body" href="{{ route('nursing-vouchers.index', ['status' => 'pending']) }}"><div class="card-body"><div class="fs-3 fw-semibold text-warning-emphasis">{{ $summary['nursing_pending'] }}</div><div>Vales de Enfermería pendientes</div></div></a></div>
         <div class="col-6 col-xl-3"><a class="card border-0 shadow-sm h-100 text-decoration-none text-body" href="{{ route('nursing-vouchers.index', ['status' => 'partially_supplied']) }}"><div class="card-body"><div class="fs-3 fw-semibold text-info-emphasis">{{ $summary['nursing_partial'] }}</div><div>Vales de Enfermería parciales</div></div></a></div>
         @if ($dashboardRole === \App\Enums\UserRole::NURSE)
@@ -70,6 +65,38 @@
             <div class="col-6 col-xl-3"><a class="card border-0 shadow-sm h-100 text-decoration-none text-body" href="{{ route('administration-vouchers.index', ['status' => 'partially_supplied']) }}"><div class="card-body"><div class="fs-3 fw-semibold text-info-emphasis">{{ $summary['administration_partial'] }}</div><div>Vales de Administración parciales</div></div></a></div>
         @endif
     </div>
+</section>
+@endif
+
+@if(isset($stockLocations))
+<section class="mb-4" aria-labelledby="stock-by-location">
+    <h3 class="h5 mb-3" id="stock-by-location">Stock por ubicación</h3>
+    @forelse($stockLocations as $location)
+        <div class="admin-card mb-3 overflow-hidden">
+            <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
+                <div><h4 class="h6 fw-bold mb-1"><i class="bi bi-building me-2 text-primary"></i>{{ $location['warehouse']->name }}</h4><span class="small text-body-secondary">Inventario principal del almacén</span></div>
+                <a href="{{ route('inventory.index', ['inventory_scope' => $location['scope']]) }}" class="btn btn-sm btn-outline-primary">Ver inventario</a>
+            </div>
+            <div class="p-3 p-lg-4">
+                @include('dashboard._stock-location', ['name' => 'Almacén', 'scope' => $location['scope'], 'counts' => $location['counts']])
+                @if($location['cabinets']->isNotEmpty())
+                    <hr class="my-4">
+                    <h5 class="h6 fw-bold mb-3">Gabinetes</h5>
+                    <div class="row g-3">
+                        @foreach($location['cabinets'] as $cabinetLocation)
+                            <div class="col-12 col-xl-6">
+                                @include('dashboard._stock-location', ['name' => $cabinetLocation['cabinet']->name, 'scope' => $cabinetLocation['scope'], 'counts' => $cabinetLocation['counts']])
+                            </div>
+                        @endforeach
+                    </div>
+                @else
+                    <p class="small text-body-secondary mb-0 mt-3">Este almacén no tiene gabinetes configurados.</p>
+                @endif
+            </div>
+        </div>
+    @empty
+        <div class="alert alert-light border">No hay almacenes disponibles para mostrar.</div>
+    @endforelse
 </section>
 @endif
 

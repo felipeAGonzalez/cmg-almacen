@@ -48,4 +48,9 @@ class InventoryOutbound extends Model
     {
         return $this->hasMany(InventoryOutboundItem::class);
     }
+
+    public function returns(): HasMany
+    {
+        return $this->hasMany(InventoryOutboundReturn::class);
+    }
 }
