@@ -6,6 +6,7 @@
     $submittedItems = old('items', [[
         'inventory_item_id' => '',
         'quantity' => '',
+        'total_cost' => '',
         'unit_cost' => '',
         'manufacturer_lot' => '',
         'expiration_date' => '',

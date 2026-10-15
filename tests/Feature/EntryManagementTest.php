@@ -163,6 +163,24 @@ class EntryManagementTest extends TestCase
             ->assertSessionHasNoErrors();
     }
 
+    public function test_total_line_cost_is_divided_by_quantity_and_saved_as_unit_cost(): void
+    {
+        [$warehouse, $supplier, $inventoryItem] = $this->context();
+
+        $payload = $this->payload($supplier, $inventoryItem, quantity: '4.000', unitCost: '999.0000');
+        $payload['items'][0]['total_cost'] = '50.00';
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.entries.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $item = Entry::query()->firstOrFail()->items()->firstOrFail();
+
+        $this->assertSame('12.5000', $item->unit_cost);
+        $this->assertSame('12.5000', $item->batch->unit_cost);
+        $this->assertSame('50.0000000', $item->subtotal);
+    }
+
     public function test_manufacturer_lot_is_optional_and_is_never_replaced_with_generic_text(): void
     {
         [$warehouse, $supplier, $inventoryItem] = $this->context();

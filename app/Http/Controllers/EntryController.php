@@ -56,7 +56,7 @@ class EntryController extends Controller
             $entry = $warehouse->entries()->create(Arr::except($data, 'items'));
 
             foreach ($data['items'] as $itemData) {
-                $entryItem = $entry->items()->create($itemData);
+                $entryItem = $entry->items()->create(Arr::except($itemData, 'total_cost'));
                 $batch = $entryItem->batch()->create([
                     'inventory_item_id' => $entryItem->inventory_item_id,
                     'internal_lot' => 'PENDING-'.Str::uuid(),

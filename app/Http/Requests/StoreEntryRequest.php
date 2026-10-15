@@ -53,7 +53,8 @@ class StoreEntryRequest extends FormRequest
                 ),
             ],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
-            'items.*.unit_cost' => ['required', 'numeric', 'min:0'],
+            'items.*.total_cost' => ['nullable', 'required_without:items.*.unit_cost', 'numeric', 'min:0'],
+            'items.*.unit_cost' => ['nullable', 'required_without:items.*.total_cost', 'numeric', 'min:0'],
             'items.*.manufacturer_lot' => ['nullable', 'string', 'max:255'],
             'items.*.expiration_date' => ['nullable', 'date'],
         ];
@@ -109,7 +110,10 @@ class StoreEntryRequest extends FormRequest
             'items.*.quantity.required' => 'La cantidad recibida es obligatoria.',
             'items.*.quantity.numeric' => 'La cantidad recibida debe ser numérica.',
             'items.*.quantity.gt' => 'La cantidad recibida debe ser mayor que cero.',
-            'items.*.unit_cost.required' => 'El costo unitario es obligatorio.',
+            'items.*.total_cost.required_without' => 'El costo total de la partida es obligatorio.',
+            'items.*.total_cost.numeric' => 'El costo total de la partida debe ser numérico.',
+            'items.*.total_cost.min' => 'El costo total de la partida no puede ser negativo.',
+            'items.*.unit_cost.required_without' => 'El costo de la partida es obligatorio.',
             'items.*.unit_cost.numeric' => 'El costo unitario debe ser numérico.',
             'items.*.unit_cost.min' => 'El costo unitario no puede ser negativo.',
             'items.*.manufacturer_lot.max' => 'El lote del fabricante no puede tener más de 255 caracteres.',
@@ -129,6 +133,12 @@ class StoreEntryRequest extends FormRequest
 
                 $item['manufacturer_lot'] = $this->nullableTrimmedValue($item['manufacturer_lot'] ?? null);
                 $item['expiration_date'] = $this->nullableTrimmedValue($item['expiration_date'] ?? null);
+
+                if (is_numeric($item['total_cost'] ?? null)
+                    && is_numeric($item['quantity'] ?? null)
+                    && bccomp((string) $item['quantity'], '0', 3) === 1) {
+                    $item['unit_cost'] = bcdiv((string) $item['total_cost'], (string) $item['quantity'], 4);
+                }
 
                 return $item;
             })->all(),

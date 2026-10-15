@@ -102,6 +102,19 @@ class EntryInterfaceTest extends TestCase
             ->assertSee((string) $requiredItem->id);
     }
 
+    public function test_create_requests_total_line_cost_and_displays_calculated_unit_cost(): void
+    {
+        [$warehouse, , , $administrator] = $this->context();
+
+        $this->actingAs($administrator)
+            ->get(route('warehouses.entries.create', $warehouse))
+            ->assertOk()
+            ->assertSee('Costo total de la partida')
+            ->assertSee('Costo por pieza')
+            ->assertSee('data-entry-total-cost', false)
+            ->assertSee('data-entry-unit-cost-display', false);
+    }
+
     public function test_validation_errors_preserve_multiple_submitted_items(): void
     {
         [$warehouse, $supplier, $firstItem, $administrator] = $this->context();

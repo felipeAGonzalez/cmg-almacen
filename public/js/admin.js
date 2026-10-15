@@ -292,15 +292,23 @@ document.addEventListener('DOMContentLoaded', function () {
         return [String(item.id), item];
     }));
     const money = new Intl.NumberFormat('es-MX', { style: 'currency', currency: 'MXN' });
+    const unitMoney = new Intl.NumberFormat('es-MX', {
+        style: 'currency',
+        currency: 'MXN',
+        minimumFractionDigits: 4,
+        maximumFractionDigits: 4,
+    });
 
     function calculateTotals() {
         let total = 0;
         list.querySelectorAll('[data-entry-item]').forEach(function (row) {
             const quantity = Number.parseFloat(row.querySelector('[data-entry-quantity]')?.value) || 0;
-            const unitCost = Number.parseFloat(row.querySelector('[data-entry-unit-cost]')?.value) || 0;
-            const subtotal = quantity * unitCost;
-            row.querySelector('[data-entry-subtotal]').textContent = money.format(subtotal);
-            total += subtotal;
+            const totalCost = Number.parseFloat(row.querySelector('[data-entry-total-cost]')?.value) || 0;
+            const unitCost = quantity > 0 ? totalCost / quantity : 0;
+            row.querySelector('[data-entry-unit-cost]').value = quantity > 0 ? unitCost.toFixed(4) : '';
+            row.querySelector('[data-entry-unit-cost-display]').textContent = unitMoney.format(unitCost);
+            row.querySelector('[data-entry-subtotal]').textContent = money.format(totalCost);
+            total += totalCost;
         });
         entryItems.querySelector('[data-entry-total]').textContent = money.format(total);
     }
@@ -331,7 +339,7 @@ document.addEventListener('DOMContentLoaded', function () {
         row.querySelector('[data-entry-product]').addEventListener('change', function () {
             updateExpiration(row);
         });
-        row.querySelectorAll('[data-entry-quantity], [data-entry-unit-cost]').forEach(function (field) {
+        row.querySelectorAll('[data-entry-quantity], [data-entry-total-cost]').forEach(function (field) {
             field.addEventListener('input', calculateTotals);
         });
         row.querySelector('[data-remove-entry-item]').addEventListener('click', function () {

@@ -2,6 +2,7 @@
     $selectedInventoryItem = (string) ($item['inventory_item_id'] ?? '');
     $inventoryItemError = $errors->first("items.$index.inventory_item_id");
     $quantityError = $errors->first("items.$index.quantity");
+    $totalCostError = $errors->first("items.$index.total_cost");
     $unitCostError = $errors->first("items.$index.unit_cost");
     $manufacturerLotError = $errors->first("items.$index.manufacturer_lot");
     $expirationError = $errors->first("items.$index.expiration_date");
@@ -28,12 +29,14 @@
             @if($quantityError)<div class="invalid-feedback">{{ $quantityError }}</div>@endif
         </div>
         <div class="col-6 col-md-3 col-xl-2">
-            <label class="form-label">Costo unitario <span class="text-danger">*</span></label>
+            <label class="form-label">Costo total de la partida <span class="text-danger">*</span></label>
             <div class="input-group has-validation">
                 <span class="input-group-text">$</span>
-                <input name="items[{{ $index }}][unit_cost]" type="number" step="0.0001" min="0" value="{{ $item['unit_cost'] ?? '' }}" class="form-control {{ $unitCostError ? 'is-invalid' : '' }}" data-entry-unit-cost required>
-                @if($unitCostError)<div class="invalid-feedback">{{ $unitCostError }}</div>@endif
+                <input name="items[{{ $index }}][total_cost]" type="number" step="0.01" min="0" value="{{ $item['total_cost'] ?? '' }}" class="form-control {{ $totalCostError ? 'is-invalid' : '' }}" data-entry-total-cost required>
+                @if($totalCostError)<div class="invalid-feedback">{{ $totalCostError }}</div>@endif
             </div>
+            <input name="items[{{ $index }}][unit_cost]" type="hidden" value="{{ $item['unit_cost'] ?? '' }}" data-entry-unit-cost>
+            @if($unitCostError)<div class="text-danger small mt-1">{{ $unitCostError }}</div>@endif
         </div>
         <div class="col-12 col-md-6 col-xl-2">
             <label class="form-label">Lote del fabricante <span class="text-body-secondary fw-normal">(Opcional)</span></label>
@@ -48,7 +51,8 @@
         </div>
     </div>
     <div class="entry-item-footer">
-        <span>Subtotal: <strong data-entry-subtotal>$0.00</strong></span>
+        <span>Costo por pieza: <strong data-entry-unit-cost-display>$0.0000</strong></span>
+        <span>Total de partida: <strong data-entry-subtotal>$0.00</strong></span>
         <button type="button" class="btn btn-sm btn-outline-danger" data-remove-entry-item><i class="bi bi-x-circle me-1"></i>Quitar</button>
     </div>
 </fieldset>
