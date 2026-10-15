@@ -5,6 +5,7 @@ namespace Tests\Feature;
 use App\Enums\AdministrationVoucherStatus;
 use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
+use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
 use App\Models\Product;
 use App\Models\User;
@@ -54,12 +55,21 @@ class AdministrationVoucherInterfaceTest extends TestCase
         $manager->warehouses()->attach($warehouse);
         $cabinet = Cabinet::factory()->for($warehouse)->create();
         $product = Product::factory()->create(['name' => 'Solución clínica']);
-        InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create();
+        $sourceItem = InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create();
         InventoryItem::factory()->forCabinet($cabinet)->for($product)->create();
         $voucher = AdministrationVoucher::create(['requested_by' => $admin->id, 'warehouse_id' => $warehouse->id, 'cabinet_id' => $cabinet->id, 'status' => AdministrationVoucherStatus::PENDING, 'requested_at' => now()]);
         $voucher->items()->create(['product_id' => $product->id, 'requested_quantity' => 10, 'supplied_quantity' => 3]);
+        InventoryBatch::query()->create([
+            'inventory_item_id' => $sourceItem->id,
+            'internal_lot' => 'ADMIN-FULL-001',
+            'received_quantity' => '7.000',
+            'available_quantity' => '7.000',
+            'unit_cost' => '1.0000',
+        ]);
         $response = $this->actingAs($manager)->get(route('administration-vouchers.show', $voucher));
-        $response->assertOk()->assertSee('Solución clínica')->assertSee('Surtir vale')->assertSee('Disponible:')->assertSee('Historial de reposiciones')->assertDontSee('Editar')->assertDontSee('Eliminar');
+        $response->assertOk()->assertSee('Solución clínica')->assertSee('Surtir vale')->assertSee('Disponible:')
+            ->assertSee('Surtir completo Solución clínica')->assertSee('data-full-quantity="7.000"', false)
+            ->assertSee('Historial de reposiciones')->assertDontSee('Editar')->assertDontSee('Eliminar');
         $this->get(route('administration-vouchers.index'))->assertOk()->assertSee('#'.$voucher->id);
     }
 
