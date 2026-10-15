@@ -107,7 +107,55 @@ class InventoryKardexTest extends TestCase
 
         $this->actingAs($user)->get(route('warehouses.cabinets.kardex.index', [$warehouse, $cabinet]))
             ->assertOk()->assertSee('Transferencia recibida')->assertSee($allocation->destinationBatch->internal_lot)
-            ->assertSee('Origen: '.$rootBatch->internal_lot)->assertDontSee('Salida manual')->assertDontSee('Proveedor:');
+            ->assertSee('Origen: '.$rootBatch->internal_lot)->assertDontSee('Vale manual #')->assertDontSee('Proveedor:');
+    }
+
+    public function test_manual_voucher_from_cabinet_appears_only_in_cabinet_kardex(): void
+    {
+        [$warehouse, $cabinet, , $cabinetItem, $user] = $this->context();
+        $batch = DB::table('inventory_batches')->insertGetId([
+            'inventory_item_id' => $cabinetItem->id,
+            'entry_item_id' => null,
+            'source_batch_id' => null,
+            'internal_lot' => 'CAB-MANUAL-KARDEX',
+            'manufacturer_lot' => 'FAB-CAB',
+            'expiration_date' => '2027-12-01',
+            'received_quantity' => '6.000',
+            'available_quantity' => '6.000',
+            'unit_cost' => '10.0000',
+            'created_at' => now(),
+            'updated_at' => now(),
+        ]);
+
+        $this->actingAs($user)->post(route('warehouses.outbounds.store', $warehouse), [
+            'source_cabinet_id' => $cabinet->id,
+            'reason' => InventoryOutboundReason::PATIENT_CARE->value,
+            'patient_name' => 'Paciente gabinete Kardex',
+            'items' => [['inventory_item_id' => $cabinetItem->id, 'quantity' => '2']],
+        ])->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::latest('id')->firstOrFail();
+        $this->assertSame(0, app(InventoryKardexService::class)->forWarehouse($warehouse, ['movement_type' => 'manual_outbound'])->total());
+        $cabinetMovements = app(InventoryKardexService::class)->forCabinet($warehouse, $cabinet, ['movement_type' => 'manual_outbound']);
+        $this->assertSame(1, $cabinetMovements->total());
+        $this->assertSame('CAB-MANUAL-KARDEX', $cabinetMovements->first()->internal_lot);
+        $this->assertSame('4.000', number_format((float) DB::table('inventory_batches')->where('id', $batch)->value('available_quantity'), 3, '.', ''));
+        $this->get(route('warehouses.cabinets.kardex.index', [$warehouse, $cabinet]))
+            ->assertOk()->assertSee('Paciente gabinete Kardex')
+            ->assertSee(route('warehouses.outbounds.show', [$warehouse, $outbound]), false);
+
+        $this->post(route('warehouses.entries.returns.store', $warehouse), [
+            'inventory_outbound_id' => $outbound->id,
+            'received_at' => now()->format('Y-m-d\TH:i'),
+            'items' => [[
+                'outbound_item_id' => $outbound->items()->firstOrFail()->id,
+                'quantity' => '0.500',
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame(1, app(InventoryKardexService::class)->forCabinet($warehouse, $cabinet, ['movement_type' => 'manual_outbound_return'])->total());
+        $this->assertSame(0, app(InventoryKardexService::class)->forWarehouse($warehouse, ['movement_type' => 'manual_outbound_return'])->total());
+        $this->assertSame('4.500', number_format((float) DB::table('inventory_batches')->where('id', $batch)->value('available_quantity'), 3, '.', ''));
     }
 
     public function test_context_isolation_and_manipulated_inventory_item_are_rejected(): void

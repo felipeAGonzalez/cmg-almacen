@@ -12,7 +12,7 @@
                 <option value="">Selecciona un producto</option>
                 @foreach($inventoryItems as $inventoryItem)
                     @php($identifier = $inventoryItem->product->code ?: $inventoryItem->product->barcode)
-                    <option value="{{ $inventoryItem->id }}" @selected($selectedId === (string) $inventoryItem->id)>{{ $inventoryItem->product->name }}@if($identifier) — {{ $identifier }}@endif — {{ $inventoryItem->product->unit->name }}</option>
+                    <option value="{{ $inventoryItem->id }}" data-source-key="{{ $inventoryItem->stockable_type }}:{{ $inventoryItem->stockable_id }}" @selected($selectedId === (string) $inventoryItem->id)>{{ $inventoryItem->product->name }}@if($identifier) — {{ $identifier }}@endif — {{ $inventoryItem->product->unit->name }}</option>
                 @endforeach
             </select>
             @if($productError)<div class="invalid-feedback">{{ $productError }}</div>@endif

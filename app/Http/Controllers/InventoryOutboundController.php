@@ -4,6 +4,7 @@ namespace App\Http\Controllers;
 
 use App\Enums\InventoryOutboundReason;
 use App\Http\Requests\StoreInventoryOutboundRequest;
+use App\Models\Cabinet;
 use App\Models\InventoryItem;
 use App\Models\InventoryOutbound;
 use App\Models\Product;
@@ -22,7 +23,7 @@ class InventoryOutboundController extends Controller
     public function index(Warehouse $warehouse): View
     {
         $outbounds = $warehouse->inventoryOutbounds()
-            ->with('processedBy')
+            ->with(['processedBy', 'sourceCabinet:id,name'])
             ->withCount('items')
             ->orderByDesc('processed_at')
             ->orderByDesc('id')
@@ -33,10 +34,13 @@ class InventoryOutboundController extends Controller
 
     public function create(Warehouse $warehouse): View
     {
+        $cabinets = $warehouse->cabinets()->orderBy('name')->get(['id', 'warehouse_id', 'name']);
+
         return view('outbounds.create', [
             'warehouse' => $warehouse,
+            'cabinets' => $cabinets,
             'reasons' => InventoryOutboundReason::cases(),
-            'inventoryItems' => $this->sourceInventoryItems($warehouse),
+            'inventoryItems' => $this->sourceInventoryItems($warehouse, $cabinets->pluck('id')),
         ]);
     }
 
@@ -45,13 +49,17 @@ class InventoryOutboundController extends Controller
         $data = $request->validated();
 
         $outbound = DB::transaction(function () use ($data, $request, $warehouse): InventoryOutbound {
-            $inventoryItems = $warehouse->inventoryItems()
+            $source = isset($data['source_cabinet_id'])
+                ? $warehouse->cabinets()->findOrFail($data['source_cabinet_id'])
+                : $warehouse;
+            $inventoryItems = $source->inventoryItems()
                 ->whereIn('id', collect($data['items'])->pluck('inventory_item_id'))
                 ->lockForUpdate()
                 ->get()
                 ->keyBy('id');
 
             $outbound = $warehouse->inventoryOutbounds()->create([
+                'source_cabinet_id' => $source instanceof Cabinet ? $source->id : null,
                 'reason' => $data['reason'],
                 'patient_name' => $data['patient_name'] ?? null,
                 'room_number' => $data['room_number'] ?? null,
@@ -102,6 +110,7 @@ class InventoryOutboundController extends Controller
     {
         $inventoryOutbound->load([
             'processedBy',
+            'sourceCabinet:id,name,warehouse_id',
             'items.inventoryItem.product.unit',
             'items.allocations.inventoryBatch',
         ]);
@@ -110,9 +119,17 @@ class InventoryOutboundController extends Controller
     }
 
     /** @return Collection<int, InventoryItem> */
-    private function sourceInventoryItems(Warehouse $warehouse): Collection
+    private function sourceInventoryItems(Warehouse $warehouse, \Illuminate\Support\Collection $cabinetIds): Collection
     {
-        return $warehouse->inventoryItems()
+        return InventoryItem::query()
+            ->where(function ($query) use ($warehouse, $cabinetIds): void {
+                $query->where(fn ($warehouseInventory) => $warehouseInventory
+                    ->where('stockable_type', $warehouse->getMorphClass())
+                    ->where('stockable_id', $warehouse->id))
+                    ->orWhere(fn ($cabinetInventory) => $cabinetInventory
+                        ->where('stockable_type', (new Cabinet)->getMorphClass())
+                        ->whereIn('stockable_id', $cabinetIds));
+            })
             ->with('product.unit')
             ->withStockTotals()
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))

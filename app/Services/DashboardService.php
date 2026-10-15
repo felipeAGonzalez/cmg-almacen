@@ -193,7 +193,7 @@ class DashboardService
     private function recentManualVouchers(?Collection $warehouseIds = null): Collection
     {
         return InventoryOutbound::query()
-            ->with('warehouse:id,name')
+            ->with(['warehouse:id,name', 'sourceCabinet:id,name'])
             ->withCount('items')
             ->where('source_type', InventoryOutbound::SOURCE_MANUAL)
             ->whereIn('reason', [

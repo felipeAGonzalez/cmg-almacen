@@ -48,6 +48,8 @@ class InventoryKardexController extends Controller
             'filters' => $filters,
             'movementTypes' => [
                 InventoryKardexService::TRANSFER_IN => 'Transferencia recibida',
+                InventoryKardexService::MANUAL_OUTBOUND => 'Salida manual',
+                InventoryKardexService::MANUAL_OUTBOUND_RETURN => 'Devolución manual — Entrada',
                 InventoryKardexService::ADJUSTMENT_IN => 'Ajuste positivo',
                 InventoryKardexService::ADJUSTMENT_OUT => 'Ajuste negativo',
                 InventoryKardexService::NURSING_VOUCHER_CABINET_OUT => 'Vale de Enfermería — Salida de gabinete',

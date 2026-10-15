@@ -141,6 +141,82 @@ class InventoryOutboundManagementTest extends TestCase
         $this->assertSame('2.875', $batch->fresh()->available_quantity);
     }
 
+    public function test_administrator_can_take_a_manual_voucher_from_a_cabinet(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $cabinet = Cabinet::factory()->for($warehouse)->create();
+        $warehouseItem = InventoryItem::factory()->forWarehouse($warehouse)->create();
+        $cabinetItem = InventoryItem::factory()->forCabinet($cabinet)->for($warehouseItem->product)->create();
+        $warehouseBatch = $this->batch($warehouse, $warehouseItem, '9');
+        $cabinetBatch = InventoryBatch::create([
+            'inventory_item_id' => $cabinetItem->id,
+            'entry_item_id' => null,
+            'source_batch_id' => null,
+            'internal_lot' => 'CABINET-MANUAL-001',
+            'manufacturer_lot' => null,
+            'expiration_date' => null,
+            'received_quantity' => '5.000',
+            'available_quantity' => '5.000',
+            'unit_cost' => '10.0000',
+        ]);
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.outbounds.store', $warehouse), [
+                'source_cabinet_id' => $cabinet->id,
+                ...$this->payload($cabinetItem, '2.250', InventoryOutboundReason::PATIENT_CARE->value),
+                'patient_name' => 'Paciente desde gabinete',
+            ])->assertSessionHasNoErrors();
+
+        $outbound = InventoryOutbound::firstOrFail();
+        $this->assertSame($cabinet->id, $outbound->source_cabinet_id);
+        $this->assertSame('2.750', $cabinetBatch->fresh()->available_quantity);
+        $this->assertSame('9.000', $warehouseBatch->fresh()->available_quantity);
+        $this->assertSame($cabinetItem->id, $outbound->items->first()->inventory_item_id);
+    }
+
+    public function test_only_administration_can_select_a_cabinet_for_a_manual_voucher(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $cabinet = Cabinet::factory()->for($warehouse)->create();
+        $cabinetItem = InventoryItem::factory()->forCabinet($cabinet)->create();
+        $batch = InventoryBatch::create([
+            'inventory_item_id' => $cabinetItem->id,
+            'entry_item_id' => null,
+            'source_batch_id' => null,
+            'internal_lot' => 'CABINET-MANUAL-SECURITY',
+            'manufacturer_lot' => null,
+            'expiration_date' => null,
+            'received_quantity' => '5.000',
+            'available_quantity' => '5.000',
+            'unit_cost' => '10.0000',
+        ]);
+        $manager = User::factory()->warehouseManager()->create();
+        $manager->warehouses()->attach($warehouse);
+
+        $this->actingAs($manager)->post(route('warehouses.outbounds.store', $warehouse), [
+            'source_cabinet_id' => $cabinet->id,
+            ...$this->payload($cabinetItem),
+        ])->assertSessionHasErrors('source_cabinet_id');
+
+        $this->assertDatabaseCount('inventory_outbounds', 0);
+        $this->assertSame('5.000', $batch->fresh()->available_quantity);
+    }
+
+    public function test_cabinet_source_must_belong_to_the_route_warehouse(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $foreignCabinet = Cabinet::factory()->for(Warehouse::factory()->create())->create();
+        $foreignItem = InventoryItem::factory()->forCabinet($foreignCabinet)->create();
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.outbounds.store', $warehouse), [
+                'source_cabinet_id' => $foreignCabinet->id,
+                ...$this->payload($foreignItem),
+            ])->assertSessionHasErrors(['source_cabinet_id', 'items.0.inventory_item_id']);
+
+        $this->assertDatabaseCount('inventory_outbounds', 0);
+    }
+
     public function test_non_patient_outbound_discards_manipulated_patient_context(): void
     {
         [$warehouse, $item] = $this->context();

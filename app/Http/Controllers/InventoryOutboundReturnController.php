@@ -24,14 +24,14 @@ class InventoryOutboundReturnController extends Controller
         $patient = trim((string) ($filters['patient'] ?? ''));
         $date = $filters['date'] ?? null;
         $outbounds = $warehouse->inventoryOutbounds()
-            ->with('processedBy')
+            ->with(['processedBy', 'sourceCabinet:id,name'])
             ->when($patient !== '', fn ($query) => $query->where('patient_name', 'like', '%'.$patient.'%'))
             ->when($date, fn ($query, string $value) => $query->whereDate('processed_at', $value))
             ->orderByDesc('processed_at')
             ->limit(50)
             ->get();
         $selectedOutbound = $request->integer('outbound')
-            ? $warehouse->inventoryOutbounds()->with(['items.inventoryItem.product.unit', 'items.allocations.returnItems', 'items.allocations.inventoryBatch'])->find($request->integer('outbound'))
+            ? $warehouse->inventoryOutbounds()->with(['sourceCabinet:id,name', 'items.inventoryItem.product.unit', 'items.allocations.returnItems', 'items.allocations.inventoryBatch'])->find($request->integer('outbound'))
             : null;
 
         return view('entries.returns.create', compact('warehouse', 'outbounds', 'selectedOutbound', 'patient', 'date'));

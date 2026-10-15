@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\InventoryOutboundReason;
+use App\Models\Cabinet;
 use App\Models\Warehouse;
 use Illuminate\Database\Query\Builder;
 use Illuminate\Foundation\Http\FormRequest;
@@ -20,6 +21,12 @@ class StoreInventoryOutboundRequest extends FormRequest
         $warehouse = $this->warehouse();
 
         return [
+            'source_cabinet_id' => [
+                Rule::prohibitedIf(! $this->user()?->isAdmin()),
+                'nullable',
+                'integer',
+                Rule::exists('cabinets', 'id')->where(fn (Builder $query) => $query->where('warehouse_id', $warehouse->id)),
+            ],
             'reason' => ['required', Rule::enum(InventoryOutboundReason::class)],
             'processed_at' => [
                 'nullable',
@@ -39,8 +46,8 @@ class StoreInventoryOutboundRequest extends FormRequest
             'items.*.inventory_item_id' => [
                 'required', 'integer', 'distinct',
                 Rule::exists('inventory_items', 'id')->where(fn (Builder $query) => $query
-                    ->where('stockable_type', $warehouse->getMorphClass())
-                    ->where('stockable_id', $warehouse->id)),
+                    ->where('stockable_type', $this->sourceStockable()->getMorphClass())
+                    ->where('stockable_id', $this->sourceStockable()->getKey())),
             ],
             'items.*.quantity' => ['required', 'numeric', 'gt:0'],
         ];
@@ -51,6 +58,8 @@ class StoreInventoryOutboundRequest extends FormRequest
         return [
             'reason.required' => 'El motivo es obligatorio.',
             'reason.enum' => 'El motivo seleccionado no es válido.',
+            'source_cabinet_id.prohibited' => 'Sólo Administración puede registrar una salida desde un gabinete.',
+            'source_cabinet_id.exists' => 'El gabinete seleccionado no pertenece a este almacén.',
             'processed_at.date_format' => 'La fecha y hora de salida no tiene un formato válido.',
             'processed_at.before_or_equal' => 'La fecha y hora de salida no puede estar en el futuro.',
             'patient_name.required' => 'El nombre del paciente es obligatorio para registrar un vale manual.',
@@ -60,7 +69,7 @@ class StoreInventoryOutboundRequest extends FormRequest
             'items.required' => 'Debes agregar al menos un producto.',
             'items.min' => 'Debes agregar al menos un producto.',
             'items.*.inventory_item_id.required' => 'El producto es obligatorio.',
-            'items.*.inventory_item_id.exists' => 'El producto no pertenece al inventario principal de este almacén.',
+            'items.*.inventory_item_id.exists' => 'El producto no pertenece al origen de inventario seleccionado.',
             'items.*.inventory_item_id.distinct' => 'El producto está repetido en la salida.',
             'items.*.quantity.required' => 'La cantidad es obligatoria.',
             'items.*.quantity.numeric' => 'La cantidad debe ser numérica.',
@@ -90,5 +99,16 @@ class StoreInventoryOutboundRequest extends FormRequest
     private function warehouse(): Warehouse
     {
         return $this->route('warehouse');
+    }
+
+    private function sourceStockable(): Warehouse|Cabinet
+    {
+        $warehouse = $this->warehouse();
+
+        if (! $this->user()?->isAdmin() || ! $this->filled('source_cabinet_id')) {
+            return $warehouse;
+        }
+
+        return $warehouse->cabinets()->find($this->integer('source_cabinet_id')) ?? $warehouse;
     }
 }

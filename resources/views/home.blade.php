@@ -146,7 +146,7 @@
     <div class="card border-0 shadow-sm">
         <div class="table-responsive">
             <table class="table align-middle mb-0">
-                <thead><tr><th>Folio</th><th>Fecha</th><th>Motivo</th><th>Destino</th><th>Almacén</th><th>Productos</th><th></th></tr></thead>
+                <thead><tr><th>Folio</th><th>Fecha</th><th>Motivo</th><th>Destino</th><th>Origen</th><th>Productos</th><th></th></tr></thead>
                 <tbody>
                 @forelse ($recentManualVouchers as $voucher)
                     <tr>
@@ -161,7 +161,7 @@
                                 {{ $voucher->requesting_area ?: 'Consumo del almacén' }}
                             @endif
                         </td>
-                        <td>{{ $voucher->warehouse->name }}</td>
+                        <td><span class="d-block">{{ $voucher->sourceCabinet ? 'Gabinete · '.$voucher->sourceCabinet->name : 'Almacén' }}</span><small class="text-body-secondary">{{ $voucher->warehouse->name }}</small></td>
                         <td>{{ $voucher->items_count }} {{ $voucher->items_count === 1 ? 'producto' : 'productos' }}</td>
                         <td class="text-end"><a class="btn btn-sm btn-outline-primary" href="{{ route('warehouses.outbounds.show', [$voucher->warehouse, $voucher]) }}">Ver</a></td>
                     </tr>

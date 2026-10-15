@@ -20,11 +20,12 @@
             </div>
             <div class="table-responsive border rounded">
                 <table class="table admin-table align-middle mb-0">
-                    <thead><tr><th>Fecha</th><th>Paciente / destino</th><th>Habitación</th><th>Realizó</th><th class="text-end">Acción</th></tr></thead>
+                    <thead><tr><th>Fecha</th><th>Origen</th><th>Paciente / destino</th><th>Habitación</th><th>Realizó</th><th class="text-end">Acción</th></tr></thead>
                     <tbody>
                         @foreach($outbounds as $outbound)
                             <tr @class(['table-primary' => $selectedOutbound?->is($outbound)])>
                                 <td class="text-nowrap"><strong>{{ $outbound->processed_at->format('d/m/Y') }}</strong><span class="small text-body-secondary d-block">{{ $outbound->processed_at->format('H:i') }}</span></td>
+                                <td><span class="badge text-bg-light border">{{ $outbound->sourceCabinet ? 'Gabinete · '.$outbound->sourceCabinet->name : 'Almacén' }}</span></td>
                                 <td><strong>{{ $outbound->patient_name ?: $outbound->reason->label() }}</strong><span class="small text-body-secondary d-block">Salida #{{ $outbound->id }}</span></td>
                                 <td>{{ $outbound->room_number ?: '—' }}</td>
                                 <td>{{ $outbound->processedBy->name }} {{ $outbound->processedBy->last_name_one }}</td>

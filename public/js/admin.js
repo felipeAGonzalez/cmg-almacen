@@ -509,6 +509,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const list = section.querySelector('[data-outbound-items-list]');
     const template = document.querySelector('[data-outbound-item-template]');
     const addButton = section.querySelector('[data-add-outbound-item]');
+    const source = form.querySelector('[data-outbound-source]');
+    const sourceWarning = form.querySelector('[data-outbound-source-warning]');
+    const emptySourceWarning = section.querySelector('[data-outbound-empty-source]');
     const reason = form.querySelector('[data-outbound-reason]');
     const patientCareFields = form.querySelector('[data-patient-care-fields]');
     const patientName = form.querySelector('[data-patient-care-required]');
@@ -534,20 +537,41 @@ document.addEventListener('DOMContentLoaded', function () {
             .filter(Boolean));
     }
 
+    function selectedSourceKey() {
+        if (!source) return section.dataset.selectedSource || 'warehouse';
+        return source.value ? `cabinet:${source.value}` : 'warehouse';
+    }
+
+    function availableOptions() {
+        const currentSource = selectedSourceKey();
+        return options.filter(function (item) { return item.sourceKey === currentSource; });
+    }
+
     function updateRow(row) {
         const select = row.querySelector('[data-outbound-product]');
         const selected = byId.get(select.value);
         const quantity = Number.parseFloat(row.querySelector('[data-outbound-quantity]').value) || 0;
         const used = selectedIds(row);
         Array.from(select.options).forEach(function (option) {
-            if (option.value) option.disabled = used.has(option.value);
+            if (!option.value) return;
+            const item = byId.get(option.value);
+            const belongsToSource = item?.sourceKey === selectedSourceKey();
+            option.hidden = !belongsToSource;
+            option.disabled = !belongsToSource || used.has(option.value);
         });
         row.querySelector('[data-outbound-stock]').textContent = selected ? formatQuantity(selected.usableStock) : '—';
         row.querySelector('[data-outbound-unit]').textContent = selected?.unit || 'Unidad';
         row.querySelector('[data-outbound-stock-warning]').classList.toggle('d-none', !selected || quantity <= Number.parseFloat(selected.usableStock));
     }
 
-    function updateRows() { list.querySelectorAll('[data-outbound-item]').forEach(updateRow); }
+    function updateRows() {
+        const hasAvailableProducts = availableOptions().length > 0;
+        list.querySelectorAll('[data-outbound-item]').forEach(updateRow);
+        emptySourceWarning?.classList.toggle('d-none', hasAvailableProducts);
+        addButton.disabled = !hasAvailableProducts;
+        const submit = form.querySelector('[data-outbound-submit]');
+        if (submit) submit.disabled = !hasAvailableProducts;
+    }
     function reindexRows() {
         const rows = list.querySelectorAll('[data-outbound-item]');
         rows.forEach(function (row, index) {
@@ -568,6 +592,22 @@ document.addEventListener('DOMContentLoaded', function () {
     }
 
     if (reason) reason.addEventListener('change', updatePatientCareFields);
+    if (source) {
+        source.addEventListener('change', function () {
+            let cleared = false;
+            list.querySelectorAll('[data-outbound-item]').forEach(function (row) {
+                const product = row.querySelector('[data-outbound-product]');
+                const selected = byId.get(product.value);
+                if (selected && selected.sourceKey !== selectedSourceKey()) {
+                    product.value = '';
+                    row.querySelector('[data-outbound-quantity]').value = '';
+                    cleared = true;
+                }
+            });
+            sourceWarning?.classList.toggle('d-none', !cleared);
+            updateRows();
+        });
+    }
     updatePatientCareFields();
     list.querySelectorAll('[data-outbound-item]').forEach(initializeRow);
     reindexRows(); updateRows();

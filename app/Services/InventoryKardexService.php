@@ -52,6 +52,8 @@ class InventoryKardexService
     public function forCabinet(Warehouse $warehouse, Cabinet $cabinet, array $filters): LengthAwarePaginator
     {
         $query = $this->transferInQuery($warehouse, $cabinet)
+            ->unionAll($this->manualOutboundQuery($cabinet))
+            ->unionAll($this->manualOutboundReturnQuery($cabinet))
             ->unionAll($this->adjustmentQuery($cabinet))
             ->unionAll($this->nursingVoucherOutQuery($cabinet, self::NURSING_VOUCHER_CABINET_OUT))
             ->unionAll($this->nursingVoucherReturnQuery($cabinet, self::NURSING_VOUCHER_CABINET_RETURN));
@@ -170,8 +172,10 @@ class InventoryKardexService
             ]);
     }
 
-    private function manualOutboundQuery(Warehouse $warehouse): Builder
+    private function manualOutboundQuery(Warehouse|Cabinet $stockable): Builder
     {
+        $warehouseId = $stockable instanceof Warehouse ? $stockable->id : $stockable->warehouse_id;
+
         return DB::table('inventory_outbound_allocations')
             ->join('inventory_outbound_items', 'inventory_outbound_items.id', '=', 'inventory_outbound_allocations.inventory_outbound_item_id')
             ->join('inventory_outbounds', 'inventory_outbounds.id', '=', 'inventory_outbound_items.inventory_outbound_id')
@@ -180,7 +184,16 @@ class InventoryKardexService
             ->join('products', 'products.id', '=', 'inventory_items.product_id')
             ->join('units', 'units.id', '=', 'products.unit_id')
             ->join('inventory_batches', 'inventory_batches.id', '=', 'inventory_outbound_allocations.inventory_batch_id')
-            ->where('inventory_outbounds.warehouse_id', $warehouse->id)
+            ->where('inventory_outbounds.warehouse_id', $warehouseId)
+            ->where('inventory_items.stockable_type', $stockable->getMorphClass())
+            ->where('inventory_items.stockable_id', $stockable->id)
+            ->when(
+                $stockable instanceof Cabinet,
+                fn (Builder $query) => $query->where('inventory_outbounds.source_cabinet_id', $stockable->id),
+                fn (Builder $query) => $query->whereNull('inventory_outbounds.source_cabinet_id'),
+            )
+            ->whereColumn('inventory_outbound_items.inventory_outbound_id', 'inventory_outbounds.id')
+            ->whereColumn('inventory_outbound_items.inventory_item_id', 'inventory_items.id')
             ->select([
                 'inventory_outbounds.processed_at as occurred_at',
                 DB::raw("'manual_outbound' as movement_type"),
@@ -206,8 +219,10 @@ class InventoryKardexService
             ]);
     }
 
-    private function manualOutboundReturnQuery(Warehouse $warehouse): Builder
+    private function manualOutboundReturnQuery(Warehouse|Cabinet $stockable): Builder
     {
+        $warehouseId = $stockable instanceof Warehouse ? $stockable->id : $stockable->warehouse_id;
+
         return DB::table('inventory_outbound_return_items')
             ->join('inventory_outbound_returns', 'inventory_outbound_returns.id', '=', 'inventory_outbound_return_items.inventory_outbound_return_id')
             ->join('inventory_outbounds', 'inventory_outbounds.id', '=', 'inventory_outbound_returns.inventory_outbound_id')
@@ -218,7 +233,14 @@ class InventoryKardexService
             ->join('inventory_items', 'inventory_items.id', '=', 'inventory_batches.inventory_item_id')
             ->join('products', 'products.id', '=', 'inventory_items.product_id')
             ->join('units', 'units.id', '=', 'products.unit_id')
-            ->where('inventory_outbound_returns.warehouse_id', $warehouse->id)
+            ->where('inventory_outbound_returns.warehouse_id', $warehouseId)
+            ->where('inventory_items.stockable_type', $stockable->getMorphClass())
+            ->where('inventory_items.stockable_id', $stockable->id)
+            ->when(
+                $stockable instanceof Cabinet,
+                fn (Builder $query) => $query->where('inventory_outbounds.source_cabinet_id', $stockable->id),
+                fn (Builder $query) => $query->whereNull('inventory_outbounds.source_cabinet_id'),
+            )
             ->whereColumn('inventory_outbound_items.inventory_outbound_id', 'inventory_outbounds.id')
             ->whereColumn('inventory_outbound_items.inventory_item_id', 'inventory_items.id')
             ->select([

@@ -68,7 +68,7 @@ class InventoryOutboundInterfaceTest extends TestCase
 
         $response = $this->actingAs($user)->get(route('warehouses.outbounds.create', $warehouse));
         $response->assertOk()->assertSee($item->product->name)->assertDontSee($other->product->name)
-            ->assertDontSee($cabinetItem->product->name)->assertSee('usableStock')->assertSee('7.5')
+            ->assertSee($cabinetItem->product->name)->assertSee('usableStock')->assertSee('7.5')
             ->assertSee('items[0][inventory_item_id]', false)->assertSee('items[0][quantity]', false)
             ->assertSee('name="processed_at"', false)->assertSee('type="datetime-local"', false)
             ->assertSee('Puedes indicar una fecha anterior');
@@ -76,6 +76,27 @@ class InventoryOutboundInterfaceTest extends TestCase
             $response->assertSee($reason->label());
         }
         $response->assertDontSee('Vale de enfermería')->assertDontSee('Vale de administración')->assertDontSee('Reposición de gabinete');
+    }
+
+    public function test_only_administration_sees_the_warehouse_or_cabinet_source_selector(): void
+    {
+        $warehouse = Warehouse::factory()->create(['name' => 'Almacén origen']);
+        $cabinet = Cabinet::factory()->for($warehouse)->create(['name' => 'Gabinete origen']);
+        InventoryItem::factory()->forWarehouse($warehouse)->create();
+        InventoryItem::factory()->forCabinet($cabinet)->create();
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->get(route('warehouses.outbounds.create', $warehouse))
+            ->assertOk()->assertSee('Origen del inventario')
+            ->assertSee('name="source_cabinet_id"', false)
+            ->assertSee('Almacén — Almacén origen')->assertSee('Gabinete — Gabinete origen');
+
+        $manager = User::factory()->warehouseManager()->create();
+        $manager->warehouses()->attach($warehouse);
+        $this->actingAs($manager)->get(route('warehouses.outbounds.create', $warehouse))
+            ->assertOk()->assertSee('Origen del inventario')->assertSee('Almacén — Almacén origen')
+            ->assertDontSee('name="source_cabinet_id"', false)
+            ->assertDontSee('Gabinete — Gabinete origen');
     }
 
     public function test_manual_patient_voucher_ui_captures_and_displays_its_destination(): void

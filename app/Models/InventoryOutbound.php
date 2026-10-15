@@ -15,6 +15,7 @@ class InventoryOutbound extends Model
     public const SOURCE_MANUAL = 'manual';
 
     protected $fillable = [
+        'source_cabinet_id',
         'reason',
         'patient_name',
         'room_number',
@@ -37,6 +38,11 @@ class InventoryOutbound extends Model
     public function warehouse(): BelongsTo
     {
         return $this->belongsTo(Warehouse::class);
+    }
+
+    public function sourceCabinet(): BelongsTo
+    {
+        return $this->belongsTo(Cabinet::class, 'source_cabinet_id');
     }
 
     public function processedBy(): BelongsTo

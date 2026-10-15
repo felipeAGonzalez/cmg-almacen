@@ -2,7 +2,8 @@
 @section('page-title', 'Registrar salida')
 @php
     $submittedItems = old('items', [['inventory_item_id' => '', 'quantity' => '']]);
-    $inventoryOptions = $inventoryItems->map(fn($inventoryItem) => ['id' => (string) $inventoryItem->id, 'name' => $inventoryItem->product->name, 'unit' => $inventoryItem->product->unit->name, 'identifier' => $inventoryItem->product->code ?: $inventoryItem->product->barcode, 'usableStock' => (string) ($inventoryItem->usable_stock ?? '0.000')])->values();
+    $selectedSourceKey = old('source_cabinet_id') ? 'cabinet:'.old('source_cabinet_id') : 'warehouse';
+    $inventoryOptions = $inventoryItems->map(fn($inventoryItem) => ['id' => (string) $inventoryItem->id, 'name' => $inventoryItem->product->name, 'unit' => $inventoryItem->product->unit->name, 'identifier' => $inventoryItem->product->code ?: $inventoryItem->product->barcode, 'usableStock' => (string) ($inventoryItem->usable_stock ?? '0.000'), 'sourceKey' => $inventoryItem->stockable_type === 'warehouse' ? 'warehouse' : 'cabinet:'.$inventoryItem->stockable_id])->values();
 @endphp
 @section('content')
 <div class="page-heading"><div><nav aria-label="Ruta de navegación"><ol class="breadcrumb small mb-2">@if(Auth::user()->isAdmin())<li class="breadcrumb-item"><a href="{{ route('warehouses.index') }}">Almacenes</a></li>@else<li class="breadcrumb-item"><a href="{{ route('home') }}">Inicio</a></li>@endif<li class="breadcrumb-item">{{ $warehouse->name }}</li><li class="breadcrumb-item"><a href="{{ route('warehouses.outbounds.index', $warehouse) }}">Salidas</a></li><li class="breadcrumb-item active">Nueva</li></ol></nav><h2>Registrar salida</h2><p>Captura una salida general o un vale manual destinado a un paciente.</p><span class="badge text-bg-light border"><i class="bi bi-building me-1"></i>Almacén: {{ $warehouse->name }}</span></div></div>
@@ -12,6 +13,25 @@
     <div class="admin-card-header"><h3 class="h6 fw-bold mb-0">Datos de la salida</h3></div>
     <div class="p-4">
         <div class="row g-3">
+            @if(Auth::user()->isAdmin())
+            <div class="col-12">
+                <label for="source_cabinet_id" class="form-label">Origen del inventario <span class="text-danger">*</span></label>
+                <select id="source_cabinet_id" name="source_cabinet_id" class="form-select @error('source_cabinet_id') is-invalid @enderror" data-outbound-source>
+                    <option value="" @selected(!old('source_cabinet_id'))>Almacén — {{ $warehouse->name }}</option>
+                    @foreach($cabinets as $cabinet)
+                        <option value="{{ $cabinet->id }}" @selected((string) old('source_cabinet_id') === (string) $cabinet->id)>Gabinete — {{ $cabinet->name }}</option>
+                    @endforeach
+                </select>
+                <div class="form-text">La existencia se descontará únicamente del origen seleccionado.</div>
+                @error('source_cabinet_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                <div class="alert alert-warning py-2 mt-2 mb-0 d-none" data-outbound-source-warning>Se limpiaron productos porque no pertenecen al nuevo origen.</div>
+            </div>
+            @else
+            <div class="col-12">
+                <span class="entry-detail-label">Origen del inventario</span>
+                <strong class="d-block">Almacén — {{ $warehouse->name }}</strong>
+            </div>
+            @endif
             <div class="col-lg-6">
                 <label for="reason" class="form-label">Motivo <span class="text-danger">*</span></label>
                 <select id="reason" name="reason" class="form-select @error('reason') is-invalid @enderror" data-outbound-reason required>
@@ -59,7 +79,7 @@
         </div>
     </div>
 </section>
-<section class="admin-card mb-4" data-outbound-items data-inventory-options='@json($inventoryOptions)'><div class="admin-card-header d-flex flex-wrap justify-content-between gap-2 align-items-center"><div><h3 class="h6 fw-bold mb-1">Productos a retirar</h3><p class="small text-body-secondary mb-0">El sistema seleccionará automáticamente los lotes disponibles, priorizando los que caduquen primero.</p></div><button type="button" class="btn btn-sm btn-outline-primary" data-add-outbound-item><i class="bi bi-plus-circle me-1"></i>Agregar producto</button></div><div class="p-3 p-lg-4">@error('items')<div class="alert alert-danger py-2">{{ $message }}</div>@enderror<div data-outbound-items-list>@foreach($submittedItems as $index => $submittedItem)@include('outbounds._item', ['index' => $index, 'item' => $submittedItem, 'inventoryItems' => $inventoryItems])@endforeach</div></div></section>
+<section class="admin-card mb-4" data-outbound-items data-selected-source="{{ $selectedSourceKey }}" data-inventory-options='@json($inventoryOptions)'><div class="admin-card-header d-flex flex-wrap justify-content-between gap-2 align-items-center"><div><h3 class="h6 fw-bold mb-1">Productos a retirar</h3><p class="small text-body-secondary mb-0">El sistema mostrará sólo productos del origen elegido y seleccionará automáticamente los lotes disponibles mediante FEFO/FIFO.</p></div><button type="button" class="btn btn-sm btn-outline-primary" data-add-outbound-item><i class="bi bi-plus-circle me-1"></i>Agregar producto</button></div><div class="p-3 p-lg-4"><div class="alert alert-warning py-2 d-none" data-outbound-empty-source>No hay productos configurados en el origen seleccionado.</div>@error('items')<div class="alert alert-danger py-2">{{ $message }}</div>@enderror<div data-outbound-items-list>@foreach($submittedItems as $index => $submittedItem)@include('outbounds._item', ['index' => $index, 'item' => $submittedItem, 'inventoryItems' => $inventoryItems])@endforeach</div></div></section>
 <div class="alert alert-light border small"><i class="bi bi-info-circle me-2"></i>Una vez registrada, la salida quedará como historial y no podrá editarse ni eliminarse desde este módulo.</div><div class="form-actions"><a href="{{ route('warehouses.outbounds.index', $warehouse) }}" class="btn btn-light border">Cancelar</a><button type="submit" class="btn btn-primary" data-outbound-submit @disabled($inventoryItems->isEmpty())><i class="bi bi-check-circle me-2"></i>Registrar salida</button></div></form>
 <template data-outbound-item-template>@include('outbounds._item', ['index' => '__INDEX__', 'item' => [], 'inventoryItems' => $inventoryItems])</template>
 @endsection
