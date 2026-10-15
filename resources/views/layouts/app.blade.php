@@ -33,7 +33,7 @@
             <button type="button" class="btn-close btn-close-white" data-bs-dismiss="offcanvas" data-bs-target="#adminSidebar" aria-label="Cerrar menú"></button>
         </div>
 
-        <div class="d-flex h-100 flex-column">
+        <div class="admin-sidebar-content d-flex flex-column">
             <a href="{{ route('home') }}" class="admin-brand text-decoration-none">
                 <span class="admin-brand-mark" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
                 <span>
