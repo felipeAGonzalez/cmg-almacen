@@ -1,9 +1,9 @@
 <div class="border rounded-3 p-3 bg-body-tertiary" data-voucher-item>
     <div class="row g-3 align-items-start">
-        <div class="col-lg-7">
+        <div class="col-lg-7" data-product-picker>
             <label class="form-label fw-semibold" for="voucher-product-{{ $index }}">Producto <span data-voucher-item-number>{{ is_numeric($index) ? $index + 1 : '' }}</span></label>
-            <input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por nombre, nombre comercial o código" autocomplete="off" data-voucher-product-search aria-label="Buscar producto {{ is_numeric($index) ? $index + 1 : '' }}">
-            <select id="voucher-product-{{ $index }}" name="items[{{ $index }}][product_id]" class="form-select @error("items.$index.product_id") is-invalid @enderror" required data-voucher-product>
+            <input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto {{ is_numeric($index) ? $index + 1 : '' }}">
+            <select id="voucher-product-{{ $index }}" name="items[{{ $index }}][product_id]" class="form-select @error("items.$index.product_id") is-invalid @enderror" required data-voucher-product data-product-search-select>
                 <option value="">Selecciona un producto</option>
                 @foreach($inventoryItems as $inventoryItem)
                     @php($product = $inventoryItem->product)

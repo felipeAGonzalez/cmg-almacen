@@ -37,6 +37,13 @@ document.addEventListener('DOMContentLoaded', () => {
         return Object.values(data[warehouse.value]?.cabinets || {}).find(item => String(item.id) === String(cabinet.value))?.products || [];
     }
 
+    function emptyProductMessage() {
+        if (!warehouse.value) return 'Selecciona primero un almacén.';
+        if (!cabinet.value) return 'Selecciona primero un gabinete.';
+
+        return 'No hay productos configurados tanto en el almacén como en el gabinete.';
+    }
+
     function render() {
         box.innerHTML = '';
         rows.forEach((row, index) => {
@@ -47,7 +54,8 @@ document.addEventListener('DOMContentLoaded', () => {
                 const label = [product.name, product.commercialName ? `Comercial: ${product.commercialName}` : null, product.unit].filter(Boolean).join(' — ');
                 return `<option value="${escapeHtml(product.id)}" data-product-search="${escapeHtml(search)}" ${String(product.id) === String(row.product_id) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
             }).join('');
-            wrapper.innerHTML = `<div class="col-md-7" data-product-picker><label class="form-label">Producto</label><input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto ${index + 1}"><select class="form-select" data-admin-product data-product-search-select name="items[${index}][product_id]" required><option value="">Selecciona un producto</option>${options}</select></div><div class="col-md-3"><label class="form-label">Cantidad</label><input class="form-control" data-admin-quantity type="number" step="0.001" min="0.001" name="items[${index}][quantity]" value="${escapeHtml(row.quantity || '')}" required></div><div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100">Quitar</button></div>`;
+            const placeholder = products().length > 0 ? 'Selecciona un producto' : emptyProductMessage();
+            wrapper.innerHTML = `<div class="col-md-7" data-product-picker><label class="form-label">Producto</label><input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto ${index + 1}"><select class="form-select" data-admin-product data-product-search-select name="items[${index}][product_id]" required><option value="">${escapeHtml(placeholder)}</option>${options}</select></div><div class="col-md-3"><label class="form-label">Cantidad</label><input class="form-control" data-admin-quantity type="number" step="0.001" min="0.001" name="items[${index}][quantity]" value="${escapeHtml(row.quantity || '')}" required></div><div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100">Quitar</button></div>`;
             wrapper.querySelector('button').onclick = () => {
                 syncRows();
                 if (rows.length > 1) {
@@ -56,6 +64,7 @@ document.addEventListener('DOMContentLoaded', () => {
                 }
             };
             box.append(wrapper);
+            refreshProductPicker(wrapper.querySelector('[data-product-picker]'));
         });
     }
 

@@ -6,25 +6,161 @@ function normalizeProductSearch(value) {
         .trim();
 }
 
-function refreshProductPicker(picker) {
-    if (!picker) return;
+let productPickerSequence = 0;
+
+function enhanceProductPicker(picker) {
+    if (!picker || picker.dataset.productPickerReady === 'true') return;
 
     const input = picker.querySelector('[data-product-search-input]');
     const select = picker.querySelector('[data-product-search-select]');
     if (!input || !select) return;
 
-    const search = normalizeProductSearch(input.value);
-    Array.from(select.options).forEach(function (option) {
-        if (!option.value) return;
+    picker.dataset.productPickerReady = 'true';
+    picker.classList.add('product-picker');
+    select.classList.add('product-picker-native');
 
-        const matches = !search || normalizeProductSearch(option.dataset.productSearch).includes(search) || option.selected;
-        option.hidden = option.dataset.contextHidden === 'true' || !matches;
+    const id = `product-picker-${++productPickerSequence}`;
+    const trigger = document.createElement('button');
+    trigger.type = 'button';
+    trigger.id = id;
+    trigger.className = `form-select text-start product-picker-toggle${select.classList.contains('is-invalid') ? ' is-invalid' : ''}`;
+    trigger.dataset.productPickerToggle = '';
+    trigger.setAttribute('aria-haspopup', 'listbox');
+    trigger.setAttribute('aria-expanded', 'false');
+
+    const menu = document.createElement('div');
+    menu.className = 'product-picker-menu shadow';
+    menu.dataset.productPickerMenu = '';
+    menu.hidden = true;
+
+    const results = document.createElement('div');
+    results.className = 'product-picker-results';
+    results.dataset.productPickerResults = '';
+    results.setAttribute('role', 'listbox');
+
+    const status = document.createElement('div');
+    status.className = 'product-picker-status';
+    status.dataset.productSearchStatus = '';
+    status.setAttribute('aria-live', 'polite');
+
+    input.classList.remove('mb-2');
+    input.classList.add('product-picker-search');
+    input.placeholder = 'Buscar por ingrediente activo o nombre comercial';
+    input.setAttribute('aria-label', 'Buscar medicamento');
+
+    select.before(trigger);
+    menu.append(input, results, status);
+    trigger.after(menu);
+
+    const label = picker.querySelector(`label[for="${select.id}"]`);
+    if (label) label.setAttribute('for', id);
+
+    function close() {
+        menu.hidden = true;
+        trigger.setAttribute('aria-expanded', 'false');
+    }
+
+    function choose(option) {
+        select.value = option.value;
+        select.dispatchEvent(new Event('change', { bubbles: true }));
+        input.value = '';
+        close();
+        trigger.focus();
+    }
+
+    function render() {
+        const search = normalizeProductSearch(input.value);
+        const options = Array.from(select.options).filter(function (option) {
+            if (!option.value) return false;
+            const matches = !search || normalizeProductSearch(option.dataset.productSearch).includes(search);
+            option.hidden = option.dataset.contextHidden === 'true' || !matches;
+            return !option.hidden;
+        });
+
+        results.innerHTML = '';
+        options.forEach(function (option) {
+            const button = document.createElement('button');
+            button.type = 'button';
+            button.className = `product-picker-option${option.selected ? ' active' : ''}`;
+            button.textContent = option.textContent.trim();
+            button.disabled = option.disabled;
+            button.setAttribute('role', 'option');
+            button.setAttribute('aria-selected', option.selected ? 'true' : 'false');
+            button.addEventListener('click', function () { choose(option); });
+            results.appendChild(button);
+        });
+
+        const selectable = options.filter(option => !option.disabled);
+        status.textContent = selectable.length === 0
+            ? 'No se encontraron productos disponibles.'
+            : `${selectable.length} ${selectable.length === 1 ? 'producto encontrado' : 'productos encontrados'}.`;
+
+        const selected = select.selectedOptions[0];
+        trigger.textContent = selected?.value ? selected.textContent.trim() : select.options[0]?.textContent.trim() || 'Selecciona un producto';
+    }
+
+    function open() {
+        document.querySelectorAll('[data-product-picker-menu]').forEach(function (otherMenu) {
+            if (otherMenu !== menu) otherMenu.hidden = true;
+        });
+        menu.hidden = false;
+        trigger.setAttribute('aria-expanded', 'true');
+        input.value = '';
+        render();
+        input.focus();
+    }
+
+    trigger.addEventListener('click', function () { menu.hidden ? open() : close(); });
+    input.addEventListener('input', render);
+    input.addEventListener('keydown', function (event) {
+        if (event.key === 'Enter') {
+            event.preventDefault();
+            results.querySelector('.product-picker-option:not(:disabled)')?.click();
+        }
+        if (event.key === 'Escape') {
+            event.preventDefault();
+            close();
+            trigger.focus();
+        }
     });
+    select.addEventListener('change', function () {
+        trigger.classList.remove('is-invalid');
+        render();
+    });
+    select.addEventListener('invalid', function () {
+        trigger.classList.add('is-invalid');
+        open();
+    });
+    picker.productPickerRefresh = render;
+    render();
 }
 
-document.addEventListener('input', function (event) {
-    if (!event.target.matches('[data-product-search-input]')) return;
-    refreshProductPicker(event.target.closest('[data-product-picker]'));
+function refreshProductPicker(picker) {
+    enhanceProductPicker(picker);
+    picker?.productPickerRefresh?.();
+}
+
+document.addEventListener('click', function (event) {
+    document.querySelectorAll('[data-product-picker-menu]').forEach(function (menu) {
+        if (!menu.closest('[data-product-picker]')?.contains(event.target)) {
+            menu.hidden = true;
+            menu.previousElementSibling?.setAttribute('aria-expanded', 'false');
+        }
+    });
+});
+
+document.addEventListener('DOMContentLoaded', function () {
+    document.querySelectorAll('[data-product-picker]').forEach(enhanceProductPicker);
+    const observer = new MutationObserver(function (mutations) {
+        mutations.forEach(function (mutation) {
+            mutation.addedNodes.forEach(function (node) {
+                if (!(node instanceof Element)) return;
+                if (node.matches('[data-product-picker]')) enhanceProductPicker(node);
+                node.querySelectorAll?.('[data-product-picker]').forEach(enhanceProductPicker);
+            });
+        });
+    });
+    observer.observe(document.body, { childList: true, subtree: true });
 });
 
 document.addEventListener('DOMContentLoaded', function () {
@@ -770,15 +906,7 @@ document.addEventListener('DOMContentLoaded', function () {
             row.querySelector('[data-voucher-product-detail]').textContent = product
                 ? [product.commercialName ? `Comercial: ${product.commercialName}` : null, product.code, product.barcode].filter(Boolean).join(' · ') || 'Sin información adicional'
                 : 'Selecciona por nombre, nombre comercial, código o código de barras.';
-        }
-
-        function filterRow(row) {
-            const search = row.querySelector('[data-voucher-product-search]').value.trim().toLocaleLowerCase('es-MX');
-            const select = row.querySelector('[data-voucher-product]');
-            Array.from(select.options).forEach(function (option) {
-                if (!option.value) return;
-                option.hidden = Boolean(search) && !option.dataset.productSearch.includes(search) && !option.selected;
-            });
+            refreshProductPicker(row.querySelector('[data-product-picker]'));
         }
 
         function updateAll() {
@@ -798,9 +926,6 @@ document.addEventListener('DOMContentLoaded', function () {
 
         function initialize(row) {
             row.querySelector('[data-voucher-product]').addEventListener('change', updateAll);
-            row.querySelector('[data-voucher-product-search]').addEventListener('input', function () {
-                filterRow(row);
-            });
             row.querySelector('[data-remove-voucher-item]').addEventListener('click', function () {
                 if (list.querySelectorAll('[data-voucher-item]').length === 1) return;
                 row.remove();
@@ -820,7 +945,7 @@ document.addEventListener('DOMContentLoaded', function () {
             initialize(row);
             reindex();
             updateAll();
-            row.querySelector('[data-voucher-product]').focus();
+            row.querySelector('[data-product-search-input]').focus();
         });
     }
 

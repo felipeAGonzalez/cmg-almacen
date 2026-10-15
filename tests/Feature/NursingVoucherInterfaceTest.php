@@ -81,7 +81,8 @@ class NursingVoucherInterfaceTest extends TestCase
             ->assertSee('Paciente validado')->assertSee('Habitación 204')
             ->assertSee('El vale será enviado al almacén para su surtido.')
             ->assertSee('Producto permitido')->assertSee('Comercial: Marca rápida')->assertDontSee('Producto ajeno')
-            ->assertSee('data-voucher-product-search', false)
+            ->assertSee('data-product-search-input', false)
+            ->assertSee('data-product-search-select', false)
             ->assertSee('nombre comercial')
             ->assertDontSee('name="source_type"', false);
     }
