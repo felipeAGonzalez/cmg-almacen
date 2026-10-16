@@ -54,6 +54,7 @@
     <div class="entry-item-footer">
         <span>Costo por pieza: <strong data-entry-unit-cost-display>$0.00</strong></span>
         <span>Total de partida: <strong data-entry-subtotal>$0.00</strong></span>
+        <span class="badge text-bg-light border" data-entry-tax-status>Selecciona un producto</span>
         <button type="button" class="btn btn-sm btn-outline-danger" data-remove-entry-item><i class="bi bi-x-circle me-1"></i>Quitar</button>
     </div>
 </fieldset>

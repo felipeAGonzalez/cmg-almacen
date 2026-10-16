@@ -12,8 +12,6 @@ class Entry extends Model
 {
     use HasFactory;
 
-    public const VAT_RATE = '0.16';
-
     protected $fillable = [
         'supplier_id',
         'invoice_number',
@@ -60,7 +58,14 @@ class Entry extends Model
     /** @return Attribute<string, never> */
     protected function vat(): Attribute
     {
-        return Attribute::get(fn (): string => bcmul($this->subtotal, self::VAT_RATE, 7));
+        return Attribute::get(function (): string {
+            $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
+
+            return $items->reduce(
+                fn (string $total, EntryItem $item): string => bcadd($total, $item->vat, 7),
+                '0.0000000',
+            );
+        });
     }
 
     /** @return Attribute<string, never> */

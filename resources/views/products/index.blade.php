@@ -7,14 +7,24 @@
     </div>
     <form method="GET" action="{{ route('products.index') }}" class="admin-card mb-4" role="search">
         <div class="p-3 p-lg-4">
-            <label for="product-search" class="form-label fw-semibold">Buscar productos</label>
-            <div class="row g-2">
-                <div class="col-12 col-lg-8">
+            <div class="row g-3 align-items-end">
+                <div class="col-12 col-lg-7">
+                    <label for="product-search" class="form-label fw-semibold">Buscar productos</label>
                     <input id="product-search" name="search" type="search" maxlength="120" value="{{ $search ?? '' }}" class="form-control" placeholder="Nombre, nombre comercial, código interno o código de barras" autocomplete="off">
                 </div>
-                <div class="col-12 col-lg-auto d-flex gap-2">
-                    <button type="submit" class="btn btn-primary"><i class="bi bi-search me-1" aria-hidden="true"></i>Buscar</button>
-                    @if ($search)<a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar</a>@endif
+                <div class="col-12 col-md-6 col-lg-3">
+                    <label for="product-category" class="form-label fw-semibold">Categoría</label>
+                    <select id="product-category" name="category_id" class="form-select @error('category_id') is-invalid @enderror">
+                        <option value="">Todas las categorías</option>
+                        @foreach ($categories as $category)
+                            <option value="{{ $category->id }}" @selected((string) ($categoryId ?? '') === (string) $category->id)>{{ $category->name }}</option>
+                        @endforeach
+                    </select>
+                    @error('category_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-12 col-md-6 col-lg-2 d-flex gap-2">
+                    <button type="submit" class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-1" aria-hidden="true"></i>Filtrar</button>
+                    @if ($search || $categoryId)<a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar</a>@endif
                 </div>
             </div>
         </div>
@@ -27,10 +37,10 @@
         @if ($products->isEmpty())
             <div class="empty-state">
                 <span class="empty-state-icon" aria-hidden="true"><i class="bi bi-box-seam"></i></span>
-                <h3 class="h5">{{ $search ? 'No se encontraron productos.' : 'No hay productos registrados.' }}</h3>
-                <p class="text-body-secondary mb-4">{{ $search ? 'Prueba con otro nombre, nombre comercial, código interno o código de barras.' : 'Crea el primer producto del catálogo general.' }}</p>
-                @if ($search)
-                    <a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar búsqueda</a>
+                <h3 class="h5">{{ ($search || $categoryId) ? 'No se encontraron productos.' : 'No hay productos registrados.' }}</h3>
+                <p class="text-body-secondary mb-4">{{ ($search || $categoryId) ? 'Prueba con otra búsqueda o categoría.' : 'Crea el primer producto del catálogo general.' }}</p>
+                @if ($search || $categoryId)
+                    <a href="{{ route('products.index') }}" class="btn btn-light border">Limpiar filtros</a>
                 @else
                     <a href="{{ route('products.create') }}" class="btn btn-primary"><i class="bi bi-plus-lg me-1" aria-hidden="true"></i>Crear producto</a>
                 @endif

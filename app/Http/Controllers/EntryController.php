@@ -22,7 +22,7 @@ class EntryController extends Controller
         $entries = $warehouse->entries()
             ->with([
                 'supplier',
-                'items:id,entry_id,quantity,unit_cost',
+                'items:id,entry_id,quantity,unit_cost,vat_rate',
             ])
             ->withCount('items')
             ->orderByDesc('invoice_date')
@@ -55,8 +55,18 @@ class EntryController extends Controller
         $entry = DB::transaction(function () use ($data, $warehouse): Entry {
             $entry = $warehouse->entries()->create(Arr::except($data, 'items'));
 
+            $inventoryItems = InventoryItem::query()
+                ->with('product.category')
+                ->whereIn('id', collect($data['items'])->pluck('inventory_item_id'))
+                ->get()
+                ->keyBy('id');
+
             foreach ($data['items'] as $itemData) {
-                $entryItem = $entry->items()->create(Arr::except($itemData, 'total_cost'));
+                $inventoryItem = $inventoryItems->get($itemData['inventory_item_id']);
+                $entryItem = $entry->items()->create([
+                    ...Arr::except($itemData, 'total_cost'),
+                    'vat_rate' => $inventoryItem->product->isMedication() ? '0.0000' : '0.1600',
+                ]);
                 $batch = $entryItem->batch()->create([
                     'inventory_item_id' => $entryItem->inventory_item_id,
                     'internal_lot' => 'PENDING-'.Str::uuid(),
@@ -92,7 +102,7 @@ class EntryController extends Controller
     private function inventoryItems(Warehouse $warehouse): Collection
     {
         return $warehouse->inventoryItems()
-            ->with('product.unit')
+            ->with(['product.unit', 'product.category'])
             ->orderBy(Product::query()->select('name')->whereColumn('products.id', 'inventory_items.product_id'))
             ->get();
     }

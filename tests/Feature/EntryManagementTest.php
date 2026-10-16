@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\Cabinet;
+use App\Models\Category;
 use App\Models\Entry;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
@@ -265,6 +266,65 @@ class EntryManagementTest extends TestCase
         $this->assertSame('41.0625000', $entry->subtotal);
         $this->assertSame('6.5700000', $entry->vat);
         $this->assertSame('47.6325000', $entry->total);
+    }
+
+    public function test_medications_are_vat_exempt_and_other_products_keep_sixteen_percent_rate(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $supplier = Supplier::factory()->for($warehouse)->create();
+        $medicationCategory = Category::factory()->create(['name' => Product::MEDICATION_CATEGORY]);
+        $medication = InventoryItem::factory()->forWarehouse($warehouse)->for(
+            Product::factory()->for($medicationCategory)->create(),
+        )->create();
+        $supply = InventoryItem::factory()->forWarehouse($warehouse)->create();
+        $payload = $this->payload($supplier, $medication, quantity: '2', unitCost: '50.0000');
+        $payload['items'][] = [
+            'inventory_item_id' => $supply->id,
+            'quantity' => '1',
+            'unit_cost' => '100.0000',
+            'manufacturer_lot' => null,
+            'expiration_date' => null,
+        ];
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.entries.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $entry = Entry::query()->with('items')->firstOrFail();
+        $medicationItem = $entry->items->firstWhere('inventory_item_id', $medication->id);
+        $supplyItem = $entry->items->firstWhere('inventory_item_id', $supply->id);
+
+        $this->assertSame('0.0000', $medicationItem->vat_rate);
+        $this->assertSame('0.0000000', $medicationItem->vat);
+        $this->assertSame('0.1600', $supplyItem->vat_rate);
+        $this->assertSame('16.0000000', $supplyItem->vat);
+        $this->assertSame('200.0000000', $entry->subtotal);
+        $this->assertSame('16.0000000', $entry->vat);
+        $this->assertSame('216.0000000', $entry->total);
+    }
+
+    public function test_medication_category_is_recognized_by_its_canonical_plural_name(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $supplier = Supplier::factory()->for($warehouse)->create();
+        $category = Category::factory()->create(['name' => 'Medicamentos']);
+        $omeprazole = InventoryItem::factory()->forWarehouse($warehouse)->for(
+            Product::factory()->for($category)->create(['name' => 'OMEPRAZOL 40MG/10 ML AMPULA']),
+        )->create();
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.entries.store', $warehouse), $this->payload(
+                $supplier,
+                $omeprazole,
+                quantity: '2',
+                unitCost: '50.0000',
+            ))->assertSessionHasNoErrors();
+
+        $entry = Entry::query()->with('items')->firstOrFail();
+
+        $this->assertSame('0.0000', $entry->items->first()->vat_rate);
+        $this->assertSame('0.0000000', $entry->vat);
+        $this->assertSame('100.0000000', $entry->total);
     }
 
     public function test_invalid_second_item_leaves_no_partial_records(): void

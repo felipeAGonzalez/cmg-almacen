@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\Cabinet;
+use App\Models\Category;
 use App\Models\Entry;
 use App\Models\InventoryItem;
 use App\Models\Product;
@@ -118,8 +119,33 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('data-entry-total-cost', false)
             ->assertSee('data-entry-unit-cost-display', false)
             ->assertSee('Subtotal')
-            ->assertSee('IVA (16%)')
+            ->assertSee('IVA aplicable (16%)')
             ->assertSee('Total de la factura');
+    }
+
+    public function test_create_exposes_medication_tax_status_and_show_identifies_exempt_items(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $supplier = Supplier::factory()->for($warehouse)->create();
+        $category = Category::factory()->create(['name' => Product::MEDICATION_CATEGORY]);
+        $product = Product::factory()->for($category)->create(['name' => 'Medicamento exento']);
+        $inventoryItem = InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create();
+        $administrator = User::factory()->administrator()->create();
+
+        $this->actingAs($administrator)
+            ->get(route('warehouses.entries.create', $warehouse))
+            ->assertOk()
+            ->assertSee('isMedication')
+            ->assertSee('IVA aplicable (16%)');
+
+        $entry = $this->createEntry($warehouse, $supplier, $inventoryItem, quantity: '2', cost: '50.0000');
+
+        $this->actingAs($administrator)
+            ->get(route('warehouses.entries.show', [$warehouse, $entry]))
+            ->assertOk()
+            ->assertSee('Exento')
+            ->assertSee('$0.00')
+            ->assertSee('$100.00');
     }
 
     public function test_validation_errors_preserve_multiple_submitted_items(): void
@@ -169,7 +195,7 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('FAB-900')
             ->assertSee('31/12/2027')
             ->assertSee('$10.31')
-            ->assertSee('IVA (16%)')
+            ->assertSee('IVA aplicable (16%)')
             ->assertSee('$1.65')
             ->assertSee('$11.96')
             ->assertSee('Volver a entradas')

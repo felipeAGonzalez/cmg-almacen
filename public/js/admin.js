@@ -461,16 +461,19 @@ document.addEventListener('DOMContentLoaded', function () {
 
     function calculateTotals() {
         let total = 0;
+        let taxableTotal = 0;
         list.querySelectorAll('[data-entry-item]').forEach(function (row) {
             const quantity = Number.parseFloat(row.querySelector('[data-entry-quantity]')?.value) || 0;
             const totalCost = Number.parseFloat(row.querySelector('[data-entry-total-cost]')?.value) || 0;
+            const selected = inventoryById.get(row.querySelector('[data-entry-product]')?.value);
             const unitCost = quantity > 0 ? totalCost / quantity : 0;
             row.querySelector('[data-entry-unit-cost]').value = quantity > 0 ? unitCost.toFixed(4) : '';
             row.querySelector('[data-entry-unit-cost-display]').textContent = unitMoney.format(unitCost);
             row.querySelector('[data-entry-subtotal]').textContent = money.format(totalCost);
             total += totalCost;
+            if (selected && !selected.isMedication) taxableTotal += totalCost;
         });
-        const vat = total * 0.16;
+        const vat = taxableTotal * 0.16;
         entryItems.querySelector('[data-entry-subtotal-total]').textContent = money.format(total);
         entryItems.querySelector('[data-entry-vat]').textContent = money.format(vat);
         entryItems.querySelector('[data-entry-total]').textContent = money.format(total + vat);
@@ -481,10 +484,13 @@ document.addEventListener('DOMContentLoaded', function () {
         const expiration = row.querySelector('[data-entry-expiration]');
         const state = row.querySelector('[data-expiration-state]');
         const required = Boolean(selected?.requiresExpiration);
+        const taxStatus = row.querySelector('[data-entry-tax-status]');
 
         expiration.required = required;
         state.textContent = required ? '*' : '(Opcional)';
         state.className = required ? 'text-danger' : 'text-body-secondary fw-normal';
+        taxStatus.textContent = selected ? (selected.isMedication ? 'Medicamento exento de IVA' : 'IVA 16%') : 'Selecciona un producto';
+        taxStatus.className = `badge ${selected?.isMedication ? 'text-bg-success' : 'text-bg-light border'}`;
     }
 
     function reindexRows() {
@@ -501,6 +507,7 @@ document.addEventListener('DOMContentLoaded', function () {
     function initializeRow(row) {
         row.querySelector('[data-entry-product]').addEventListener('change', function () {
             updateExpiration(row);
+            calculateTotals();
         });
         row.querySelectorAll('[data-entry-quantity], [data-entry-total-cost]').forEach(function (field) {
             field.addEventListener('input', calculateTotals);

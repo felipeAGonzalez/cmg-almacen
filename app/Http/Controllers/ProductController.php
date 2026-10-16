@@ -18,6 +18,7 @@ class ProductController extends Controller
     public function index(IndexProductRequest $request): View
     {
         $search = $request->validated('search');
+        $categoryId = $request->validated('category_id');
         $products = Product::query()
             ->with(['unit', 'category', 'brand'])
             ->when($search, fn ($query) => $query->where(function ($searchQuery) use ($search): void {
@@ -26,11 +27,14 @@ class ProductController extends Controller
                     ->orWhere('code', 'like', "%{$search}%")
                     ->orWhere('barcode', 'like', "%{$search}%");
             }))
+            ->when($categoryId, fn ($query, $value) => $query->where('category_id', $value))
             ->orderBy('name')
             ->paginate(15)
             ->withQueryString();
 
-        return view('products.index', compact('products', 'search'));
+        $categories = Category::query()->orderBy('name')->get(['id', 'name']);
+
+        return view('products.index', compact('products', 'search', 'categoryId', 'categories'));
     }
 
     public function create(): View

@@ -16,6 +16,7 @@ class EntryItem extends Model
         'inventory_item_id',
         'quantity',
         'unit_cost',
+        'vat_rate',
         'manufacturer_lot',
         'expiration_date',
     ];
@@ -25,6 +26,7 @@ class EntryItem extends Model
         return [
             'quantity' => 'decimal:3',
             'unit_cost' => 'decimal:4',
+            'vat_rate' => 'decimal:4',
             'expiration_date' => 'date',
         ];
     }
@@ -51,5 +53,17 @@ class EntryItem extends Model
     protected function subtotal(): Attribute
     {
         return Attribute::get(fn (): string => bcmul($this->quantity, $this->unit_cost, 7));
+    }
+
+    /** @return Attribute<string, never> */
+    protected function vat(): Attribute
+    {
+        return Attribute::get(fn (): string => bcmul($this->subtotal, $this->vat_rate, 7));
+    }
+
+    /** @return Attribute<string, never> */
+    protected function total(): Attribute
+    {
+        return Attribute::get(fn (): string => bcadd($this->subtotal, $this->vat, 7));
     }
 }

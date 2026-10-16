@@ -251,6 +251,31 @@ class ProductManagementTest extends TestCase
         }
     }
 
+    public function test_product_index_filters_by_category_and_combines_with_search(): void
+    {
+        $medications = Category::factory()->create(['name' => 'Medicamento']);
+        $supplies = Category::factory()->create(['name' => 'Insumo médico']);
+        Product::factory()->for($medications)->create(['name' => 'Paracetamol']);
+        Product::factory()->for($medications)->create(['name' => 'Metamizol']);
+        Product::factory()->for($supplies)->create(['name' => 'Jeringa']);
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->get(route('products.index', ['category_id' => $medications->id, 'search' => 'Para']))
+            ->assertOk()
+            ->assertSee('Paracetamol')
+            ->assertDontSee('Metamizol')
+            ->assertDontSee('Jeringa')
+            ->assertSee('value="'.$medications->id.'" selected', false)
+            ->assertViewHas('categories', fn ($categories): bool => $categories->pluck('name')->all() === ['Insumo médico', 'Medicamento']);
+    }
+
+    public function test_product_index_rejects_an_unknown_category(): void
+    {
+        $this->actingAs(User::factory()->administrator()->create())
+            ->get(route('products.index', ['category_id' => 999999]))
+            ->assertSessionHasErrors('category_id');
+    }
+
     public function test_create_and_edit_receive_alphabetically_ordered_catalogs(): void
     {
         Unit::factory()->create(['name' => 'Pieza']);

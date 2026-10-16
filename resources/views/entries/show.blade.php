@@ -35,7 +35,7 @@
     <section class="admin-card overflow-hidden" aria-labelledby="entry-items-title">
         <div class="admin-card-header"><h3 class="h6 fw-bold mb-0" id="entry-items-title">Partidas recibidas</h3></div>
         <div class="table-responsive"><table class="table admin-table align-middle">
-            <thead><tr><th>Producto</th><th>Unidad</th><th>Cantidad recibida</th><th>Costo unitario</th><th>Subtotal</th><th>Lote interno</th><th>Lote fabricante</th><th>Caducidad</th></tr></thead>
+            <thead><tr><th>Producto</th><th>Unidad</th><th>Cantidad recibida</th><th>Costo unitario</th><th>Subtotal</th><th>IVA</th><th>Lote interno</th><th>Lote fabricante</th><th>Caducidad</th></tr></thead>
             <tbody>
                 @foreach ($entry->items as $item)
                     <tr>
@@ -44,6 +44,7 @@
                         <td>{{ \App\Models\InventoryItem::formatQuantity($item->quantity) }}</td>
                         <td class="text-nowrap">${{ number_format((float) $item->unit_cost, 2, '.', ',') }}</td>
                         <td class="fw-semibold text-nowrap">${{ number_format((float) $item->subtotal, 2, '.', ',') }}</td>
+                        <td class="text-nowrap"><span class="badge {{ bccomp($item->vat_rate, '0', 4) === 0 ? 'text-bg-success' : 'text-bg-light border' }}">{{ bccomp($item->vat_rate, '0', 4) === 0 ? 'Exento' : '16%' }}</span></td>
                         <td><code class="entry-lot">{{ $item->batch->internal_lot }}</code></td>
                         <td>{{ $item->batch->manufacturer_lot ?: 'No indicado' }}</td>
                         <td class="text-nowrap">{{ $item->batch->expiration_date?->format('d/m/Y') ?: 'Sin caducidad' }}</td>
@@ -53,7 +54,7 @@
         </table></div>
         <div class="entry-show-total flex-column align-items-stretch gap-2">
             <div class="d-flex justify-content-between gap-3"><span>Subtotal</span><strong>${{ number_format((float) $entry->subtotal, 2, '.', ',') }}</strong></div>
-            <div class="d-flex justify-content-between gap-3"><span>IVA (16%)</span><strong>${{ number_format((float) $entry->vat, 2, '.', ',') }}</strong></div>
+            <div class="d-flex justify-content-between gap-3"><span>IVA aplicable (16%)</span><strong>${{ number_format((float) $entry->vat, 2, '.', ',') }}</strong></div>
             <div class="d-flex justify-content-between gap-3 border-top pt-2"><span>Total de la factura</span><strong>${{ number_format((float) $entry->total, 2, '.', ',') }}</strong></div>
         </div>
     </section>

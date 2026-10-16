@@ -10,6 +10,8 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
+    public const MEDICATION_CATEGORY = 'Medicamentos';
+
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
 
@@ -60,5 +62,10 @@ class Product extends Model
     public function nursingVoucherItems(): HasMany
     {
         return $this->hasMany(NursingVoucherItem::class);
+    }
+
+    public function isMedication(): bool
+    {
+        return $this->category?->name === self::MEDICATION_CATEGORY;
     }
 }

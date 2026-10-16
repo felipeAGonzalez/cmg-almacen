@@ -17,6 +17,7 @@
         'unit' => $inventoryItem->product->unit->name,
         'identifier' => $inventoryItem->product->code ?: $inventoryItem->product->barcode,
         'requiresExpiration' => $inventoryItem->product->requires_expiration,
+        'isMedication' => $inventoryItem->product->isMedication(),
     ])->values();
 @endphp
 
@@ -99,7 +100,7 @@
                 </div>
                 <div class="entry-total flex-column align-items-stretch gap-2 mt-3">
                     <div class="d-flex justify-content-between gap-3"><span>Subtotal</span><strong data-entry-subtotal-total>$0.00</strong></div>
-                    <div class="d-flex justify-content-between gap-3"><span>IVA (16%)</span><strong data-entry-vat>$0.00</strong></div>
+                    <div class="d-flex justify-content-between gap-3"><span>IVA aplicable (16%)</span><strong data-entry-vat>$0.00</strong></div>
                     <div class="d-flex justify-content-between gap-3 border-top pt-2"><span>Total de la factura</span><strong data-entry-total>$0.00</strong></div>
                 </div>
             </div>
