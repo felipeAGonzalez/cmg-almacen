@@ -72,8 +72,13 @@
                 @error('room_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-md-6 col-lg-3">
-                <label for="requesting_area" class="form-label">Área solicitante <span class="text-body-secondary fw-normal">(Opcional)</span></label>
-                <input id="requesting_area" name="requesting_area" type="text" maxlength="150" value="{{ old('requesting_area') }}" class="form-control @error('requesting_area') is-invalid @enderror" autocomplete="off">
+                <label for="requesting_area" class="form-label">Área solicitante <span class="text-danger">*</span></label>
+                <select id="requesting_area" name="requesting_area" class="form-select @error('requesting_area') is-invalid @enderror" data-patient-care-required>
+                    <option value="">Selecciona un área</option>
+                    @foreach($requestingAreas as $requestingArea)
+                        <option value="{{ $requestingArea->value }}" @selected(old('requesting_area') === $requestingArea->value)>{{ $requestingArea->label() }}</option>
+                    @endforeach
+                </select>
                 @error('requesting_area')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
         </div>

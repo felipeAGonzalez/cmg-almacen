@@ -19,6 +19,7 @@
         'requiresExpiration' => $inventoryItem->product->requires_expiration,
         'isMedication' => $inventoryItem->product->isMedication(),
     ])->values();
+    $selectedSupplier = $suppliers->firstWhere('id', (int) old('supplier_id'));
 @endphp
 
 @section('content')
@@ -60,10 +61,10 @@
             <div class="p-4"><div class="row g-3">
                 <div class="col-lg-4">
                     <label for="supplier_id" class="form-label">Proveedor <span class="text-danger">*</span></label>
-                    <select id="supplier_id" name="supplier_id" class="form-select @error('supplier_id') is-invalid @enderror" required>
+                    <select id="supplier_id" name="supplier_id" class="form-select @error('supplier_id') is-invalid @enderror" data-entry-supplier required>
                         <option value="">Selecciona un proveedor</option>
                         @foreach ($suppliers as $supplier)
-                            <option value="{{ $supplier->id }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ $supplier->name }}</option>
+                            <option value="{{ $supplier->id }}" data-charges-freight="{{ $supplier->charges_freight ? '1' : '0' }}" @selected((string) old('supplier_id') === (string) $supplier->id)>{{ $supplier->name }}{{ $supplier->charges_freight ? ' — Cobra flete' : '' }}</option>
                         @endforeach
                     </select>
                     @error('supplier_id')<div class="invalid-feedback">{{ $message }}</div>@enderror
@@ -72,6 +73,15 @@
                     <label for="invoice_number" class="form-label">Número de factura <span class="text-danger">*</span></label>
                     <input id="invoice_number" name="invoice_number" value="{{ old('invoice_number') }}" class="form-control @error('invoice_number') is-invalid @enderror" placeholder="Ej. A-12345" maxlength="255" required>
                     @error('invoice_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+                <div class="col-lg-4 {{ $selectedSupplier?->charges_freight ? '' : 'd-none' }}" data-entry-freight-container>
+                    <label for="freight_cost" class="form-label">Costo de flete <span class="text-danger">*</span></label>
+                    <div class="input-group has-validation">
+                        <span class="input-group-text">$</span>
+                        <input id="freight_cost" name="freight_cost" type="number" step="0.01" min="0.01" value="{{ old('freight_cost') }}" class="form-control @error('freight_cost') is-invalid @enderror" data-entry-freight-cost @required($selectedSupplier?->charges_freight) @disabled(! $selectedSupplier?->charges_freight)>
+                        @error('freight_cost')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                    </div>
+                    <div class="form-text">Este importe se suma al total de la factura y causa IVA del 16%.</div>
                 </div>
                 <div class="col-lg-4">
                     <label for="invoice_date" class="form-label">Fecha de factura <span class="text-danger">*</span></label>
@@ -101,6 +111,7 @@
                 <div class="entry-total flex-column align-items-stretch gap-2 mt-3">
                     <div class="d-flex justify-content-between gap-3"><span>Subtotal</span><strong data-entry-subtotal-total>$0.00</strong></div>
                     <div class="d-flex justify-content-between gap-3"><span>IVA aplicable (16%)</span><strong data-entry-vat>$0.00</strong></div>
+                    <div class="d-flex justify-content-between gap-3"><span>Flete</span><strong data-entry-freight-total>$0.00</strong></div>
                     <div class="d-flex justify-content-between gap-3 border-top pt-2"><span>Total de la factura</span><strong data-entry-total>$0.00</strong></div>
                 </div>
             </div>

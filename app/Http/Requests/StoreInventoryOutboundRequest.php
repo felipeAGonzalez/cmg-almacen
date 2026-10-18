@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Enums\InventoryOutboundReason;
+use App\Enums\ManualVoucherRequestingArea;
 use App\Models\Cabinet;
 use App\Models\Warehouse;
 use Illuminate\Database\Query\Builder;
@@ -40,7 +41,11 @@ class StoreInventoryOutboundRequest extends FormRequest
                 'max:255',
             ],
             'room_number' => ['nullable', 'string', 'max:50'],
-            'requesting_area' => ['nullable', 'string', 'max:150'],
+            'requesting_area' => [
+                Rule::requiredIf($this->input('reason') === InventoryOutboundReason::PATIENT_CARE->value),
+                'nullable',
+                Rule::enum(ManualVoucherRequestingArea::class),
+            ],
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.inventory_item_id' => [
@@ -65,7 +70,8 @@ class StoreInventoryOutboundRequest extends FormRequest
             'patient_name.required' => 'El nombre del paciente es obligatorio para registrar un vale manual.',
             'patient_name.max' => 'El nombre del paciente no debe exceder 255 caracteres.',
             'room_number.max' => 'La habitación no debe exceder 50 caracteres.',
-            'requesting_area.max' => 'El área solicitante no debe exceder 150 caracteres.',
+            'requesting_area.required' => 'El área solicitante es obligatoria para registrar un vale manual.',
+            'requesting_area.enum' => 'El área solicitante seleccionada no es válida.',
             'items.required' => 'Debes agregar al menos un producto.',
             'items.min' => 'Debes agregar al menos un producto.',
             'items.*.inventory_item_id.required' => 'El producto es obligatorio.',
@@ -86,6 +92,12 @@ class StoreInventoryOutboundRequest extends FormRequest
             $value = $this->input($field);
             $normalized[$field] = is_string($value) && trim($value) !== '' ? trim($value) : null;
         }
+
+        $normalized['requesting_area'] = match (mb_strtolower((string) $normalized['requesting_area'])) {
+            'enfermería', 'enfermeria', 'área de enfermería', 'area de enfermeria' => ManualVoucherRequestingArea::NURSING_AREA->value,
+            'pamedic' => ManualVoucherRequestingArea::PAMEDIC->value,
+            default => $normalized['requesting_area'],
+        };
 
         if ($this->input('reason') !== InventoryOutboundReason::PATIENT_CARE->value) {
             $normalized['patient_name'] = null;

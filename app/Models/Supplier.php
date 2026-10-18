@@ -19,8 +19,14 @@ class Supplier extends Model
         'phone',
         'email',
         'address',
+        'charges_freight',
         'notes',
     ];
+
+    protected function casts(): array
+    {
+        return ['charges_freight' => 'boolean'];
+    }
 
     /**
      * @return BelongsTo<Warehouse, $this>

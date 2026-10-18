@@ -179,7 +179,7 @@ class InventoryTransferManagementTest extends TestCase
         $this->assertNull($derived->entry_item_id);
         $this->assertSame('FAB-100', $derived->manufacturer_lot);
         $this->assertSame('2027-01-15', $derived->expiration_date->toDateString());
-        $this->assertSame('8.1250', $derived->unit_cost);
+        $this->assertSame('8.12500', $derived->unit_cost);
         $this->assertSame('2.500', $derived->received_quantity);
         $this->assertSame('2.500', $derived->available_quantity);
         $this->assertNotSame($root->internal_lot, $derived->internal_lot);

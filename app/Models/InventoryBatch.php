@@ -32,7 +32,7 @@ class InventoryBatch extends Model
             'expiration_date' => 'date',
             'received_quantity' => 'decimal:3',
             'available_quantity' => 'decimal:3',
-            'unit_cost' => 'decimal:4',
+            'unit_cost' => 'decimal:5',
         ];
     }
 

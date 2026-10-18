@@ -157,8 +157,9 @@
                             @if ($voucher->reason === \App\Enums\InventoryOutboundReason::PATIENT_CARE)
                                 <span class="d-block">{{ $voucher->patient_name }}</span>
                                 @if ($voucher->room_number)<small class="text-body-secondary">Habitación {{ $voucher->room_number }}</small>@endif
+                                <small class="d-block text-body-secondary">{{ $voucher->requestingAreaLabel() }}</small>
                             @else
-                                {{ $voucher->requesting_area ?: 'Consumo del almacén' }}
+                                {{ $voucher->requesting_area ? $voucher->requestingAreaLabel() : 'Consumo del almacén' }}
                             @endif
                         </td>
                         <td><span class="d-block">{{ $voucher->sourceCabinet ? 'Gabinete · '.$voucher->sourceCabinet->name : 'Almacén' }}</span><small class="text-body-secondary">{{ $voucher->warehouse->name }}</small></td>

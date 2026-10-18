@@ -4,6 +4,7 @@ namespace Tests\Feature;
 
 use App\Enums\InventoryAdjustmentReason;
 use App\Enums\InventoryOutboundReason;
+use App\Enums\ManualVoucherRequestingArea;
 use App\Enums\UserRole;
 use App\Models\Cabinet;
 use App\Models\InventoryItem;
@@ -77,7 +78,7 @@ class InventoryKardexTest extends TestCase
             'reason' => InventoryOutboundReason::PATIENT_CARE->value,
             'patient_name' => 'Paciente Kardex',
             'room_number' => '105',
-            'requesting_area' => 'Hospitalización',
+            'requesting_area' => ManualVoucherRequestingArea::NURSING_AREA->value,
             'notes' => null,
             'items' => [['inventory_item_id' => $item->id, 'quantity' => '2']],
         ])->assertSessionHasNoErrors();
@@ -134,6 +135,7 @@ class InventoryKardexTest extends TestCase
             'source_cabinet_id' => $cabinet->id,
             'reason' => InventoryOutboundReason::PATIENT_CARE->value,
             'patient_name' => 'Paciente gabinete Kardex',
+            'requesting_area' => ManualVoucherRequestingArea::NURSING_AREA->value,
             'items' => [['inventory_item_id' => $cabinetItem->id, 'quantity' => '2']],
         ])->assertSessionHasNoErrors();
 

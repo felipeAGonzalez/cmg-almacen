@@ -52,6 +52,7 @@
                             <th scope="col">Contacto</th>
                             <th scope="col">Teléfono</th>
                             <th scope="col">Correo electrónico</th>
+                            <th scope="col">Flete</th>
                             <th scope="col" class="text-end">Acciones</th>
                         </tr>
                     </thead>
@@ -74,6 +75,7 @@
                                         —
                                     @endif
                                 </td>
+                                <td><span class="badge {{ $supplier->charges_freight ? 'text-bg-warning' : 'text-bg-light border' }}">{{ $supplier->charges_freight ? 'Cobra flete' : 'Sin flete' }}</span></td>
                                 <td class="text-end text-nowrap">
                                     <a href="{{ route('warehouses.suppliers.edit', [$warehouse, $supplier]) }}" class="btn btn-sm btn-outline-primary" aria-label="Editar {{ $supplier->name }}"><i class="bi bi-pencil-square me-1" aria-hidden="true"></i>Editar</a>
                                     <button

@@ -35,6 +35,15 @@
                 @error('address')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
             <div class="col-12">
+                <div class="form-check form-switch">
+                    <input type="hidden" name="charges_freight" value="0">
+                    <input class="form-check-input @error('charges_freight') is-invalid @enderror" type="checkbox" role="switch" id="charges_freight" name="charges_freight" value="1" @checked((bool) old('charges_freight', $supplier->charges_freight ?? false))>
+                    <label class="form-check-label fw-semibold" for="charges_freight">Este proveedor cobra flete</label>
+                    <div class="form-text">Al seleccionarlo, las entradas de este proveedor solicitarán el costo de flete.</div>
+                    @error('charges_freight')<div class="invalid-feedback">{{ $message }}</div>@enderror
+                </div>
+            </div>
+            <div class="col-12">
                 <label for="notes" class="form-label">Notas</label>
                 <textarea id="notes" name="notes" class="form-control @error('notes') is-invalid @enderror" rows="4" placeholder="Agrega observaciones breves sobre el proveedor.">{{ old('notes', $supplier->notes ?? '') }}</textarea>
                 @error('notes')<div class="invalid-feedback">{{ $message }}</div>@enderror

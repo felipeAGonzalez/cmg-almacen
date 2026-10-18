@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\InventoryOutboundReason;
+use App\Enums\ManualVoucherRequestingArea;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Model;
 use Illuminate\Database\Eloquent\Relations\BelongsTo;
@@ -58,5 +59,17 @@ class InventoryOutbound extends Model
     public function returns(): HasMany
     {
         return $this->hasMany(InventoryOutboundReturn::class);
+    }
+
+    public function requestingAreaLabel(): string
+    {
+        return ManualVoucherRequestingArea::tryFrom((string) $this->requesting_area)?->label()
+            ?? $this->requesting_area
+            ?? 'No indicada';
+    }
+
+    public function isPamedicVoucher(): bool
+    {
+        return $this->requesting_area === ManualVoucherRequestingArea::PAMEDIC->value;
     }
 }

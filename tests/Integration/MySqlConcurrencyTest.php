@@ -132,7 +132,7 @@ class MySqlConcurrencyTest extends TestCase
 
         $this->assertSame('0.001', $tiny->fresh()->available_quantity);
         $this->assertSame('999999.999', $large->fresh()->available_quantity);
-        $this->assertSame('1.1250', $large->fresh()->unit_cost);
+        $this->assertSame('1.12500', $large->fresh()->unit_cost);
         $this->expectException(Throwable::class);
         InventoryItem::factory()->forWarehouse($warehouse)->for($item->product)->create();
     }

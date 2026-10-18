@@ -3,6 +3,7 @@
 namespace App\Http\Controllers;
 
 use App\Enums\InventoryOutboundReason;
+use App\Enums\ManualVoucherRequestingArea;
 use App\Http\Requests\StoreInventoryOutboundRequest;
 use App\Models\Cabinet;
 use App\Models\InventoryItem;
@@ -40,6 +41,7 @@ class InventoryOutboundController extends Controller
             'warehouse' => $warehouse,
             'cabinets' => $cabinets,
             'reasons' => InventoryOutboundReason::cases(),
+            'requestingAreas' => ManualVoucherRequestingArea::cases(),
             'inventoryItems' => $this->sourceInventoryItems($warehouse, $cabinets->pluck('id')),
         ]);
     }

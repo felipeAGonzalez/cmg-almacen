@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\InventoryOutboundReason;
+use App\Enums\ManualVoucherRequestingArea;
 use App\Enums\UserRole;
 use App\Models\Cabinet;
 use App\Models\InventoryBatch;
@@ -137,7 +138,7 @@ class InventoryOutboundManagementTest extends TestCase
         $this->assertSame(InventoryOutboundReason::PATIENT_CARE, $outbound->reason);
         $this->assertSame('Paciente Manual', $outbound->patient_name);
         $this->assertSame('204 B', $outbound->room_number);
-        $this->assertSame('Enfermería', $outbound->requesting_area);
+        $this->assertSame(ManualVoucherRequestingArea::NURSING_AREA->value, $outbound->requesting_area);
         $this->assertSame('2.875', $batch->fresh()->available_quantity);
     }
 
@@ -165,6 +166,7 @@ class InventoryOutboundManagementTest extends TestCase
                 'source_cabinet_id' => $cabinet->id,
                 ...$this->payload($cabinetItem, '2.250', InventoryOutboundReason::PATIENT_CARE->value),
                 'patient_name' => 'Paciente desde gabinete',
+                'requesting_area' => ManualVoucherRequestingArea::NURSING_AREA->value,
             ])->assertSessionHasNoErrors();
 
         $outbound = InventoryOutbound::firstOrFail();

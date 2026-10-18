@@ -109,12 +109,12 @@ class EntryManagementTest extends TestCase
         $this->assertTrue($entry->supplier->is($supplier));
         $this->assertTrue($item->inventoryItem->is($inventoryItem));
         $this->assertSame('2.500', $item->quantity);
-        $this->assertSame('4.1250', $item->unit_cost);
+        $this->assertSame('4.12500', $item->unit_cost);
         $this->assertSame('FAB-001', $item->manufacturer_lot);
         $this->assertSame('FAB-001', $batch->manufacturer_lot);
         $this->assertSame('2.500', $batch->received_quantity);
         $this->assertSame('2.500', $batch->available_quantity);
-        $this->assertSame('4.1250', $batch->unit_cost);
+        $this->assertSame('4.12500', $batch->unit_cost);
         $this->assertMatchesRegularExpression('/^INT-\d{8}-\d{6,}$/', $batch->internal_lot);
     }
 
@@ -177,9 +177,27 @@ class EntryManagementTest extends TestCase
 
         $item = Entry::query()->firstOrFail()->items()->firstOrFail();
 
-        $this->assertSame('12.5000', $item->unit_cost);
-        $this->assertSame('12.5000', $item->batch->unit_cost);
+        $this->assertSame('12.50000', $item->unit_cost);
+        $this->assertSame('12.50000', $item->batch->unit_cost);
         $this->assertSame('50.0000000', $item->subtotal);
+    }
+
+    public function test_entry_item_unit_cost_preserves_five_decimal_places(): void
+    {
+        [$warehouse, $supplier, $inventoryItem] = $this->context();
+
+        $payload = $this->payload($supplier, $inventoryItem, quantity: '3.000', unitCost: '0');
+        $payload['items'][0]['total_cost'] = '10.00';
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.entries.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $item = Entry::query()->firstOrFail()->items()->firstOrFail();
+
+        $this->assertSame('3.33333', $item->unit_cost);
+        $this->assertSame('3.33333', $item->batch->unit_cost);
+        $this->assertSame('9.9999900', $item->subtotal);
     }
 
     public function test_manufacturer_lot_is_optional_and_is_never_replaced_with_generic_text(): void
@@ -266,6 +284,46 @@ class EntryManagementTest extends TestCase
         $this->assertSame('41.0625000', $entry->subtotal);
         $this->assertSame('6.5700000', $entry->vat);
         $this->assertSame('47.6325000', $entry->total);
+    }
+
+    public function test_freight_is_required_for_configured_supplier_and_is_taxed_at_sixteen_percent(): void
+    {
+        [$warehouse, $supplier, $inventoryItem] = $this->context();
+        $supplier->update(['charges_freight' => true]);
+        $administrator = User::factory()->administrator()->create();
+
+        $this->actingAs($administrator)
+            ->post(route('warehouses.entries.store', $warehouse), $this->payload($supplier, $inventoryItem))
+            ->assertSessionHasErrors('freight_cost');
+
+        $payload = $this->payload($supplier, $inventoryItem);
+        $payload['freight_cost'] = '125.50';
+
+        $this->post(route('warehouses.entries.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $entry = Entry::query()->with('items')->firstOrFail();
+
+        $this->assertSame('125.50', $entry->freight_cost);
+        $this->assertSame('30.7500000', $entry->subtotal);
+        $this->assertSame('25.0000000', $entry->vat);
+        $this->assertSame('181.2500000', $entry->total);
+    }
+
+    public function test_freight_is_ignored_when_supplier_is_not_configured_to_charge_it(): void
+    {
+        [$warehouse, $supplier, $inventoryItem] = $this->context();
+        $payload = $this->payload($supplier, $inventoryItem);
+        $payload['freight_cost'] = '999.99';
+
+        $this->actingAs(User::factory()->administrator()->create())
+            ->post(route('warehouses.entries.store', $warehouse), $payload)
+            ->assertSessionHasNoErrors();
+
+        $entry = Entry::query()->firstOrFail();
+
+        $this->assertSame('0.00', $entry->freight_cost);
+        $this->assertSame('35.6700000', $entry->total);
     }
 
     public function test_medications_are_vat_exempt_and_other_products_keep_sixteen_percent_rate(): void

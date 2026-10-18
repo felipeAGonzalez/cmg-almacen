@@ -16,12 +16,16 @@ class Entry extends Model
         'supplier_id',
         'invoice_number',
         'invoice_date',
+        'freight_cost',
         'notes',
     ];
 
     protected function casts(): array
     {
-        return ['invoice_date' => 'date'];
+        return [
+            'invoice_date' => 'date',
+            'freight_cost' => 'decimal:2',
+        ];
     }
 
     /** @return BelongsTo<Warehouse, $this> */
@@ -61,16 +65,24 @@ class Entry extends Model
         return Attribute::get(function (): string {
             $items = $this->relationLoaded('items') ? $this->items : $this->items()->get();
 
-            return $items->reduce(
+            $itemsVat = $items->reduce(
                 fn (string $total, EntryItem $item): string => bcadd($total, $item->vat, 7),
                 '0.0000000',
             );
+
+            $freightVat = bcmul((string) ($this->freight_cost ?? '0'), '0.16', 7);
+
+            return bcadd($itemsVat, $freightVat, 7);
         });
     }
 
     /** @return Attribute<string, never> */
     protected function total(): Attribute
     {
-        return Attribute::get(fn (): string => bcadd($this->subtotal, $this->vat, 7));
+        return Attribute::get(fn (): string => bcadd(
+            bcadd($this->subtotal, $this->vat, 7),
+            (string) ($this->freight_cost ?? '0'),
+            7,
+        ));
     }
 }

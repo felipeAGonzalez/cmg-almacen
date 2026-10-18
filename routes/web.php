@@ -29,6 +29,7 @@ use App\Http\Controllers\ProductController;
 use App\Http\Controllers\SupplierController;
 use App\Http\Controllers\UnitController;
 use App\Http\Controllers\UserController;
+use App\Http\Controllers\VoucherPrintController;
 use App\Http\Controllers\WarehouseController;
 use App\Http\Controllers\WarehouseInventoryController;
 use Illuminate\Support\Facades\Auth;
@@ -66,6 +67,7 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::get('nursing/vouchers', [NursingVoucherController::class, 'index'])->name('nursing-vouchers.index');
     Route::get('nursing/vouchers/create', [NursingVoucherController::class, 'create'])->name('nursing-vouchers.create');
     Route::post('nursing/vouchers', [NursingVoucherController::class, 'store'])->name('nursing-vouchers.store');
+    Route::get('nursing/vouchers/{nursingVoucher}/print', [VoucherPrintController::class, 'nursing'])->name('nursing-vouchers.print');
     Route::get('nursing/vouchers/{nursingVoucher}', [NursingVoucherController::class, 'show'])->name('nursing-vouchers.show');
     Route::post('nursing/vouchers/{nursingVoucher}/fulfillments', [NursingVoucherFulfillmentController::class, 'store'])->name('nursing-vouchers.fulfillments.store');
     Route::post('nursing/vouchers/{nursingVoucher}/returns', [NursingVoucherReturnController::class, 'store'])->name('nursing-vouchers.returns.store');
@@ -77,6 +79,7 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::post('administration/vouchers', [AdministrationVoucherController::class, 'store'])->name('administration-vouchers.store');
     Route::get('administration/vouchers/{administrationVoucher}/edit', [AdministrationVoucherController::class, 'edit'])->name('administration-vouchers.edit');
     Route::put('administration/vouchers/{administrationVoucher}', [AdministrationVoucherController::class, 'update'])->name('administration-vouchers.update');
+    Route::get('administration/vouchers/{administrationVoucher}/print', [VoucherPrintController::class, 'administration'])->name('administration-vouchers.print');
     Route::get('administration/vouchers/{administrationVoucher}', [AdministrationVoucherController::class, 'show'])->name('administration-vouchers.show');
     Route::post('administration/vouchers/{administrationVoucher}/fulfillments', [AdministrationVoucherFulfillmentController::class, 'store'])->name('administration-vouchers.fulfillments.store');
     Route::post('administration/vouchers/{administrationVoucher}/reject', [AdministrationVoucherController::class, 'reject'])->name('administration-vouchers.reject');
@@ -140,6 +143,11 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         ->only(['index', 'create', 'store', 'show'])
         ->middleware('transfer.access')
         ->scoped();
+
+    Route::get('warehouses/{warehouse}/outbounds/{inventoryOutbound}/print', [VoucherPrintController::class, 'manual'])
+        ->middleware('outbound.access')
+        ->scopeBindings()
+        ->name('warehouses.outbounds.print');
 
     Route::resource('warehouses.outbounds', InventoryOutboundController::class)
         ->parameters(['outbounds' => 'inventoryOutbound'])

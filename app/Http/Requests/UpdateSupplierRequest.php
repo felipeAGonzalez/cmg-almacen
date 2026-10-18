@@ -35,6 +35,7 @@ class UpdateSupplierRequest extends FormRequest
             'phone' => ['nullable', 'string', 'max:50'],
             'email' => ['nullable', 'email', 'max:255'],
             'address' => ['nullable', 'string', 'max:1000'],
+            'charges_freight' => ['required', 'boolean'],
             'notes' => ['nullable', 'string'],
         ];
     }
@@ -57,6 +58,7 @@ class UpdateSupplierRequest extends FormRequest
             'email.max' => 'El correo electrónico no puede tener más de 255 caracteres.',
             'address.string' => 'La dirección debe ser texto.',
             'address.max' => 'La dirección no puede tener más de 1000 caracteres.',
+            'charges_freight.boolean' => 'La configuración de flete no es válida.',
             'notes.string' => 'Las notas deben ser texto.',
         ];
     }
@@ -72,13 +74,17 @@ class UpdateSupplierRequest extends FormRequest
             'phone' => 'teléfono',
             'email' => 'correo electrónico',
             'address' => 'dirección',
+            'charges_freight' => 'cobra flete',
             'notes' => 'notas',
         ];
     }
 
     protected function prepareForValidation(): void
     {
-        $this->merge($this->normalizedStrings());
+        $this->merge([
+            ...$this->normalizedStrings(),
+            'charges_freight' => $this->boolean('charges_freight'),
+        ]);
     }
 
     /**

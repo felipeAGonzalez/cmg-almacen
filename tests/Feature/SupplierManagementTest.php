@@ -80,6 +80,27 @@ class SupplierManagementTest extends TestCase
         $this->assertDatabaseHas('suppliers', ['warehouse_id' => $warehouse->id, 'name' => 'Proveedor Médico ABC']);
     }
 
+    public function test_supplier_can_be_configured_to_charge_freight(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create();
+
+        $this->actingAs($administrator)
+            ->post(route('warehouses.suppliers.store', $warehouse), $this->payload([
+                'charges_freight' => '1',
+            ]))
+            ->assertSessionHasNoErrors();
+
+        $supplier = Supplier::query()->firstOrFail();
+
+        $this->assertTrue($supplier->charges_freight);
+
+        $this->get(route('warehouses.suppliers.edit', [$warehouse, $supplier]))
+            ->assertOk()
+            ->assertSee('Este proveedor cobra flete')
+            ->assertSee('checked', false);
+    }
+
     public function test_creation_validation_and_normalization_are_applied(): void
     {
         $administrator = User::factory()->administrator()->create();
@@ -339,6 +360,7 @@ class SupplierManagementTest extends TestCase
             'phone' => '555 123 4567',
             'email' => 'contacto@example.com',
             'address' => 'Calle Principal 123',
+            'charges_freight' => '0',
             'notes' => 'Proveedor autorizado.',
         ], $overrides);
     }

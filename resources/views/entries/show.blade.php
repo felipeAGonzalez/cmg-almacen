@@ -55,6 +55,7 @@
         <div class="entry-show-total flex-column align-items-stretch gap-2">
             <div class="d-flex justify-content-between gap-3"><span>Subtotal</span><strong>${{ number_format((float) $entry->subtotal, 2, '.', ',') }}</strong></div>
             <div class="d-flex justify-content-between gap-3"><span>IVA aplicable (16%)</span><strong>${{ number_format((float) $entry->vat, 2, '.', ',') }}</strong></div>
+            <div class="d-flex justify-content-between gap-3"><span>Flete</span><strong>${{ number_format((float) $entry->freight_cost, 2, '.', ',') }}</strong></div>
             <div class="d-flex justify-content-between gap-3 border-top pt-2"><span>Total de la factura</span><strong>${{ number_format((float) $entry->total, 2, '.', ',') }}</strong></div>
         </div>
     </section>

@@ -25,7 +25,7 @@ class EntryItem extends Model
     {
         return [
             'quantity' => 'decimal:3',
-            'unit_cost' => 'decimal:4',
+            'unit_cost' => 'decimal:5',
             'vat_rate' => 'decimal:4',
             'expiration_date' => 'date',
         ];

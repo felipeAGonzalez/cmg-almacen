@@ -3,6 +3,7 @@
 namespace Tests\Feature;
 
 use App\Enums\InventoryOutboundReason;
+use App\Enums\ManualVoucherRequestingArea;
 use App\Enums\UserRole;
 use App\Models\Cabinet;
 use App\Models\InventoryBatch;
@@ -119,13 +120,15 @@ class InventoryOutboundInterfaceTest extends TestCase
             ->assertSee('name="patient_name"', false)
             ->assertSee('name="room_number"', false)
             ->assertSee('name="requesting_area"', false)
+            ->assertSee('Área de Enfermería')
+            ->assertSee('Pamedic')
             ->assertSee('no se validan con Hospitalización');
 
         $this->post(route('warehouses.outbounds.store', $warehouse), [
             'reason' => InventoryOutboundReason::PATIENT_CARE->value,
             'patient_name' => 'Paciente Papel',
             'room_number' => '310',
-            'requesting_area' => 'Urgencias',
+            'requesting_area' => ManualVoucherRequestingArea::PAMEDIC->value,
             'notes' => 'Vale recibido en papel',
             'items' => [['inventory_item_id' => $item->id, 'quantity' => '1']],
         ])->assertSessionHasNoErrors();
@@ -133,7 +136,7 @@ class InventoryOutboundInterfaceTest extends TestCase
         $outbound = InventoryOutbound::firstOrFail();
         $this->get(route('warehouses.outbounds.show', [$warehouse, $outbound]))
             ->assertOk()->assertSee('Vale manual #'.$outbound->id)
-            ->assertSee('Paciente Papel')->assertSee('310')->assertSee('Urgencias')
+            ->assertSee('Paciente Papel')->assertSee('310')->assertSee('Pamedic')
             ->assertSee('no fue validada con Hospitalización');
     }
 

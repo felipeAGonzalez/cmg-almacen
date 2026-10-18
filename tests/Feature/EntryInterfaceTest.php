@@ -120,7 +120,42 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('data-entry-unit-cost-display', false)
             ->assertSee('Subtotal')
             ->assertSee('IVA aplicable (16%)')
+            ->assertSee('Flete')
             ->assertSee('Total de la factura');
+    }
+
+    public function test_entry_form_identifies_freight_suppliers_and_show_displays_the_charge(): void
+    {
+        [$warehouse, $supplier, $inventoryItem, $administrator] = $this->context();
+        $supplier->update(['charges_freight' => true]);
+
+        $this->actingAs($administrator)
+            ->get(route('warehouses.entries.create', $warehouse))
+            ->assertOk()
+            ->assertSee('data-charges-freight="1"', false)
+            ->assertSee('Cobra flete')
+            ->assertSee('name="freight_cost"', false);
+
+        $this->post(route('warehouses.entries.store', $warehouse), [
+            'supplier_id' => $supplier->id,
+            'invoice_number' => 'INV-FLETE',
+            'invoice_date' => '2026-10-17',
+            'freight_cost' => '75.25',
+            'items' => [[
+                'inventory_item_id' => $inventoryItem->id,
+                'quantity' => '1.000',
+                'unit_cost' => '10.00000',
+            ]],
+        ])->assertSessionHasNoErrors();
+
+        $entry = Entry::query()->firstOrFail();
+
+        $this->get(route('warehouses.entries.show', [$warehouse, $entry]))
+            ->assertOk()
+            ->assertSee('Flete')
+            ->assertSee('$75.25')
+            ->assertSee('$13.64')
+            ->assertSee('$98.89');
     }
 
     public function test_create_exposes_medication_tax_status_and_show_identifies_exempt_items(): void

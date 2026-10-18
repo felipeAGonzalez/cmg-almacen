@@ -3,6 +3,7 @@
 namespace App\Http\Requests;
 
 use App\Models\InventoryItem;
+use App\Models\Supplier;
 use App\Models\Warehouse;
 use Illuminate\Contracts\Validation\ValidationRule;
 use Illuminate\Database\Query\Builder;
@@ -41,6 +42,12 @@ class StoreEntryRequest extends FormRequest
                 ),
             ],
             'invoice_date' => ['required', 'date'],
+            'freight_cost' => [
+                Rule::excludeIf(fn (): bool => ! $this->supplierChargesFreight()),
+                Rule::requiredIf(fn (): bool => $this->supplierChargesFreight()),
+                'numeric',
+                'gt:0',
+            ],
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.inventory_item_id' => [
@@ -102,6 +109,9 @@ class StoreEntryRequest extends FormRequest
             'invoice_number.unique' => 'Esta factura ya está registrada para el proveedor seleccionado.',
             'invoice_date.required' => 'La fecha de factura es obligatoria.',
             'invoice_date.date' => 'La fecha de factura no es válida.',
+            'freight_cost.required' => 'El costo de flete es obligatorio para este proveedor.',
+            'freight_cost.numeric' => 'El costo de flete debe ser numérico.',
+            'freight_cost.gt' => 'El costo de flete debe ser mayor que cero.',
             'items.required' => 'Debes agregar al menos una partida.',
             'items.array' => 'Las partidas no son válidas.',
             'items.min' => 'Debes agregar al menos una partida.',
@@ -125,6 +135,7 @@ class StoreEntryRequest extends FormRequest
     {
         $this->merge([
             'invoice_number' => $this->trimmed('invoice_number'),
+            'freight_cost' => $this->nullableTrimmed('freight_cost'),
             'notes' => $this->nullableTrimmed('notes'),
             'items' => collect($this->input('items', []))->map(function (mixed $item): mixed {
                 if (! is_array($item)) {
@@ -137,7 +148,7 @@ class StoreEntryRequest extends FormRequest
                 if (is_numeric($item['total_cost'] ?? null)
                     && is_numeric($item['quantity'] ?? null)
                     && bccomp((string) $item['quantity'], '0', 3) === 1) {
-                    $item['unit_cost'] = bcdiv((string) $item['total_cost'], (string) $item['quantity'], 4);
+                    $item['unit_cost'] = bcdiv((string) $item['total_cost'], (string) $item['quantity'], 5);
                 }
 
                 return $item;
@@ -148,6 +159,15 @@ class StoreEntryRequest extends FormRequest
     private function warehouse(): Warehouse
     {
         return $this->route('warehouse');
+    }
+
+    private function supplierChargesFreight(): bool
+    {
+        return Supplier::query()
+            ->where('warehouse_id', $this->warehouse()->getKey())
+            ->whereKey($this->input('supplier_id'))
+            ->where('charges_freight', true)
+            ->exists();
     }
 
     private function trimmed(string $field): mixed

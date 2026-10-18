@@ -453,6 +453,9 @@ document.addEventListener('DOMContentLoaded', function () {
     const template = document.querySelector('[data-entry-item-template]');
     const addButton = entryItems.querySelector('[data-add-entry-item]');
     const inventoryOptions = JSON.parse(entryItems.dataset.inventoryOptions || '[]');
+    const supplierSelect = entryForm.querySelector('[data-entry-supplier]');
+    const freightContainer = entryForm.querySelector('[data-entry-freight-container]');
+    const freightInput = entryForm.querySelector('[data-entry-freight-cost]');
     const inventoryById = new Map(inventoryOptions.map(function (item) {
         return [String(item.id), item];
     }));
@@ -467,16 +470,31 @@ document.addEventListener('DOMContentLoaded', function () {
             const totalCost = Number.parseFloat(row.querySelector('[data-entry-total-cost]')?.value) || 0;
             const selected = inventoryById.get(row.querySelector('[data-entry-product]')?.value);
             const unitCost = quantity > 0 ? totalCost / quantity : 0;
-            row.querySelector('[data-entry-unit-cost]').value = quantity > 0 ? unitCost.toFixed(4) : '';
+            row.querySelector('[data-entry-unit-cost]').value = quantity > 0 ? unitCost.toFixed(5) : '';
             row.querySelector('[data-entry-unit-cost-display]').textContent = unitMoney.format(unitCost);
             row.querySelector('[data-entry-subtotal]').textContent = money.format(totalCost);
             total += totalCost;
             if (selected && !selected.isMedication) taxableTotal += totalCost;
         });
-        const vat = taxableTotal * 0.16;
+        const freight = freightInput && !freightInput.disabled ? Number.parseFloat(freightInput.value) || 0 : 0;
+        const vat = (taxableTotal + freight) * 0.16;
         entryItems.querySelector('[data-entry-subtotal-total]').textContent = money.format(total);
         entryItems.querySelector('[data-entry-vat]').textContent = money.format(vat);
-        entryItems.querySelector('[data-entry-total]').textContent = money.format(total + vat);
+        entryItems.querySelector('[data-entry-freight-total]').textContent = money.format(freight);
+        entryItems.querySelector('[data-entry-total]').textContent = money.format(total + vat + freight);
+    }
+
+    function updateFreightVisibility() {
+        const selectedOption = supplierSelect?.selectedOptions[0];
+        const chargesFreight = selectedOption?.dataset.chargesFreight === '1';
+
+        freightContainer?.classList.toggle('d-none', !chargesFreight);
+        if (freightInput) {
+            freightInput.disabled = !chargesFreight;
+            freightInput.required = chargesFreight;
+            if (!chargesFreight) freightInput.value = '';
+        }
+        calculateTotals();
     }
 
     function updateExpiration(row) {
@@ -525,7 +543,9 @@ document.addEventListener('DOMContentLoaded', function () {
 
     list.querySelectorAll('[data-entry-item]').forEach(initializeRow);
     reindexRows();
-    calculateTotals();
+    updateFreightVisibility();
+    supplierSelect?.addEventListener('change', updateFreightVisibility);
+    freightInput?.addEventListener('input', calculateTotals);
 
     addButton.addEventListener('click', function () {
         const wrapper = document.createElement('div');
