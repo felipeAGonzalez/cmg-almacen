@@ -8,12 +8,15 @@ use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
+use App\Models\OperationalSetting;
 use App\Models\Product;
 use App\Models\Supplier;
 use App\Models\User;
 use App\Models\Warehouse;
 use App\Services\AdministrationVoucherFulfillmentService;
 use App\Services\AdministrationVoucherService;
+use Carbon\CarbonImmutable;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Illuminate\Validation\ValidationException;
 use Tests\TestCase;
@@ -33,6 +36,61 @@ class AdministrationVoucherManagementTest extends TestCase
         }
         $this->assertFalse(User::factory()->warehouseManager()->create()->can('create', AdministrationVoucher::class));
         $this->assertFalse(User::factory()->nurse()->create()->can('create', AdministrationVoucher::class));
+    }
+
+    public function test_weekly_delegate_can_create_only_on_configured_day_and_assigned_warehouse(): void
+    {
+        [$warehouse, $cabinet, $product] = $this->context();
+        $otherWarehouse = Warehouse::factory()->create();
+        $otherCabinet = Cabinet::factory()->for($otherWarehouse)->create();
+        $otherProduct = Product::factory()->create();
+        InventoryItem::factory()->forWarehouse($otherWarehouse)->for($otherProduct)->create();
+        InventoryItem::factory()->forCabinet($otherCabinet)->for($otherProduct)->create();
+        $manager = User::factory()->warehouseManager()->create();
+        $manager->warehouses()->attach($warehouse);
+        OperationalSetting::current()->update([
+            'administration_voucher_delegate_user_id' => $manager->id,
+            'administration_voucher_delegate_day' => 1,
+        ]);
+
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-31 10:00', config('app.timezone')));
+
+        try {
+            $this->assertTrue($manager->can('create', AdministrationVoucher::class));
+            $voucher = app(AdministrationVoucherService::class)->create(
+                $manager,
+                $warehouse,
+                $cabinet,
+                [['product_id' => $product->id, 'quantity' => 2]],
+            );
+            $this->assertSame($manager->id, $voucher->requested_by);
+
+            $this->expectException(AuthorizationException::class);
+            app(AdministrationVoucherService::class)->create(
+                $manager,
+                $otherWarehouse,
+                $otherCabinet,
+                [['product_id' => $otherProduct->id, 'quantity' => 1]],
+            );
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
+    }
+
+    public function test_weekly_delegate_cannot_create_outside_configured_day(): void
+    {
+        $manager = User::factory()->warehouseManager()->create();
+        OperationalSetting::current()->update([
+            'administration_voucher_delegate_user_id' => $manager->id,
+            'administration_voucher_delegate_day' => 1,
+        ]);
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-09-01 10:00', config('app.timezone')));
+
+        try {
+            $this->assertFalse($manager->can('create', AdministrationVoucher::class));
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
     }
 
     public function test_context_products_duplicates_and_quantities_are_validated(): void

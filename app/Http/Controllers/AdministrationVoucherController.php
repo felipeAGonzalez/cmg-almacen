@@ -123,9 +123,14 @@ class AdministrationVoucherController extends Controller
     /** @return Collection<int, Warehouse> */
     private function warehousesForForm(): Collection
     {
-        return Warehouse::query()
+        $query = Warehouse::query()
             ->with(['inventoryItems.product.unit', 'cabinets.inventoryItems.product.unit'])
-            ->orderBy('name')
-            ->get();
+            ->orderBy('name');
+
+        if (! request()->user()->isAdmin()) {
+            $query->whereIn('id', request()->user()->warehouses()->select('warehouses.id'));
+        }
+
+        return $query->get();
     }
 }

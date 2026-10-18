@@ -21,7 +21,7 @@ class AdministrationVoucherPolicy
 
     public function create(User $user): bool
     {
-        return $user->isAdmin();
+        return $user->canCreateAdministrationVoucher();
     }
 
     public function update(User $user, AdministrationVoucher $voucher): bool

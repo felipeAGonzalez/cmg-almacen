@@ -136,6 +136,39 @@ class OperationalSettingTest extends TestCase
         $this->assertSame(3, $setting->warehouse_rest_day);
     }
 
+    public function test_administrator_can_configure_a_weekly_warehouse_manager_delegate(): void
+    {
+        $administrator = User::factory()->administrator()->create();
+        $manager = User::factory()->warehouseManager()->create(['name' => 'Almacenista suplente']);
+        $nurse = User::factory()->nurse()->create();
+
+        $this->actingAs($administrator)
+            ->get(route('operational-settings.edit'))
+            ->assertOk()
+            ->assertSee('Suplencia para vales de Administración')
+            ->assertSee('Almacenista suplente');
+
+        $this->put(route('operational-settings.update'), $this->schedulePayload([
+            'administration_voucher_delegate_user_id' => $manager->id,
+            'administration_voucher_delegate_day' => 1,
+        ]))->assertSessionHasNoErrors();
+
+        $this->assertDatabaseHas('operational_settings', [
+            'administration_voucher_delegate_user_id' => $manager->id,
+            'administration_voucher_delegate_day' => 1,
+        ]);
+
+        $this->put(route('operational-settings.update'), $this->schedulePayload([
+            'administration_voucher_delegate_user_id' => $nurse->id,
+            'administration_voucher_delegate_day' => 1,
+        ]))->assertSessionHasErrors('administration_voucher_delegate_user_id');
+
+        $this->put(route('operational-settings.update'), $this->schedulePayload([
+            'administration_voucher_delegate_user_id' => $manager->id,
+            'administration_voucher_delegate_day' => null,
+        ]))->assertSessionHasErrors('administration_voucher_delegate_day');
+    }
+
     public function test_service_respects_application_timezone(): void
     {
         config(['app.timezone' => 'America/Mexico_City']);

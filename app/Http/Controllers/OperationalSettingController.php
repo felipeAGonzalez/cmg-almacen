@@ -2,7 +2,9 @@
 
 namespace App\Http\Controllers;
 
+use App\Enums\UserRole;
 use App\Http\Requests\UpdateOperationalSettingRequest;
+use App\Models\User;
 use App\Services\OperationalScheduleService;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\View\View;
@@ -14,6 +16,11 @@ class OperationalSettingController extends Controller
         return view('operational-settings.edit', [
             'setting' => $schedule->setting(),
             'schedule' => $schedule,
+            'warehouseManagers' => User::query()
+                ->where('role', UserRole::WAREHOUSE_MANAGER)
+                ->orderBy('name')
+                ->orderBy('last_name_one')
+                ->get(),
         ]);
     }
 

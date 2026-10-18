@@ -7,6 +7,7 @@ use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\User;
 use App\Models\Warehouse;
+use Illuminate\Auth\Access\AuthorizationException;
 use Illuminate\Support\Facades\DB;
 use Illuminate\Support\Facades\Gate;
 use Illuminate\Validation\ValidationException;
@@ -18,6 +19,11 @@ class AdministrationVoucherService
     public function create(User $requester, Warehouse $warehouse, Cabinet $cabinet, array $items, ?string $notes = null): AdministrationVoucher
     {
         Gate::forUser($requester)->authorize('create', AdministrationVoucher::class);
+
+        if (! $requester->isAdmin() && ! $requester->canManageWarehouse($warehouse)) {
+            throw new AuthorizationException('No puedes crear vales para este almacén.');
+        }
+
         $this->validateRequest($warehouse, $cabinet, $items);
 
         return DB::transaction(function () use ($requester, $warehouse, $cabinet, $items, $notes): AdministrationVoucher {

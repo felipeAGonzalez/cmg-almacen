@@ -7,9 +7,11 @@ use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
+use App\Models\OperationalSetting;
 use App\Models\Product;
 use App\Models\User;
 use App\Models\Warehouse;
+use Carbon\CarbonImmutable;
 use Illuminate\Foundation\Testing\RefreshDatabase;
 use Tests\TestCase;
 
@@ -47,6 +49,29 @@ class AdministrationVoucherInterfaceTest extends TestCase
             ->assertSee('data-product-search-select', false)
             ->assertSee('function syncRows()', false)
             ->assertSee("document.querySelector('#add-admin-item').onclick", false);
+    }
+
+    public function test_weekly_delegate_create_form_only_contains_assigned_warehouses(): void
+    {
+        $manager = User::factory()->warehouseManager()->create();
+        $assigned = Warehouse::factory()->create(['name' => 'Almacén asignado']);
+        Warehouse::factory()->create(['name' => 'Almacén ajeno']);
+        $manager->warehouses()->attach($assigned);
+        OperationalSetting::current()->update([
+            'administration_voucher_delegate_user_id' => $manager->id,
+            'administration_voucher_delegate_day' => 1,
+        ]);
+        CarbonImmutable::setTestNow(CarbonImmutable::parse('2026-08-31 10:00', config('app.timezone')));
+
+        try {
+            $this->actingAs($manager)
+                ->get(route('administration-vouchers.create'))
+                ->assertOk()
+                ->assertSee('Almacén asignado')
+                ->assertDontSee('Almacén ajeno');
+        } finally {
+            CarbonImmutable::setTestNow();
+        }
     }
 
     public function test_index_is_scoped_and_show_is_read_only_with_pending_stock(): void

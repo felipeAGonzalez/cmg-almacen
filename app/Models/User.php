@@ -3,6 +3,7 @@
 namespace App\Models;
 
 use App\Enums\UserRole;
+use Carbon\CarbonInterface;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
 use Illuminate\Database\Eloquent\Relations\BelongsToMany;
@@ -43,6 +44,23 @@ class User extends Authenticatable
     public function isAdmin(): bool
     {
         return in_array($this->role, [UserRole::ADMINISTRATOR, UserRole::ROOT], true);
+    }
+
+    public function canCreateAdministrationVoucher(?CarbonInterface $at = null): bool
+    {
+        if ($this->isAdmin()) {
+            return true;
+        }
+
+        if ($this->role !== UserRole::WAREHOUSE_MANAGER) {
+            return false;
+        }
+
+        $setting = OperationalSetting::current();
+        $localDateTime = ($at ?? now())->copy()->setTimezone(config('app.timezone'));
+
+        return $setting->administration_voucher_delegate_user_id === $this->getKey()
+            && $setting->administration_voucher_delegate_day === $localDateTime->dayOfWeekIso;
     }
 
     public function canManageSuppliersIn(Warehouse $warehouse): bool
