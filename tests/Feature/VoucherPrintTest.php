@@ -162,7 +162,8 @@ class VoucherPrintTest extends TestCase
             ->assertOk()
             ->assertSee('Corporación Pamedic')
             ->assertSee('Vale de medicamentos e insumos')
-            ->assertSee('Espacio para')
+            ->assertSee('/images/print/pamedic/logo.png', false)
+            ->assertDontSee('Espacio para')
             ->assertDontSee('Centro Médico Guadalupano');
     }
 
