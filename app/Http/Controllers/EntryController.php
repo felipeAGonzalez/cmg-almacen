@@ -65,7 +65,7 @@ class EntryController extends Controller
                 $inventoryItem = $inventoryItems->get($itemData['inventory_item_id']);
                 $entryItem = $entry->items()->create([
                     ...Arr::except($itemData, 'total_cost'),
-                    'vat_rate' => $inventoryItem->product->isMedication() ? '0.0000' : '0.1600',
+                    'vat_rate' => $inventoryItem->product->isVatTaxable() ? '0.1600' : '0.0000',
                 ]);
                 $batch = $entryItem->batch()->create([
                     'inventory_item_id' => $entryItem->inventory_item_id,

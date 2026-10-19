@@ -17,7 +17,7 @@
         'unit' => $inventoryItem->product->unit->name,
         'identifier' => $inventoryItem->product->code ?: $inventoryItem->product->barcode,
         'requiresExpiration' => $inventoryItem->product->requires_expiration,
-        'isMedication' => $inventoryItem->product->isMedication(),
+        'isVatTaxable' => $inventoryItem->product->isVatTaxable(),
     ])->values();
     $selectedSupplier = $suppliers->firstWhere('id', (int) old('supplier_id'));
 @endphp

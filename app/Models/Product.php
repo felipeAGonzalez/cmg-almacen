@@ -10,7 +10,9 @@ use Illuminate\Database\Eloquent\Relations\HasMany;
 
 class Product extends Model
 {
-    public const MEDICATION_CATEGORY = 'Medicamentos';
+    public const MEDICATION_CATEGORY_KEY = 'medications';
+
+    public const VAT_TAXABLE_CATEGORY_KEY = 'healing_material';
 
     /** @use HasFactory<ProductFactory> */
     use HasFactory;
@@ -66,6 +68,11 @@ class Product extends Model
 
     public function isMedication(): bool
     {
-        return $this->category?->name === self::MEDICATION_CATEGORY;
+        return $this->category?->key === self::MEDICATION_CATEGORY_KEY;
+    }
+
+    public function isVatTaxable(): bool
+    {
+        return $this->category?->key === self::VAT_TAXABLE_CATEGORY_KEY;
     }
 }

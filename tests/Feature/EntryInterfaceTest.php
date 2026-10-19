@@ -59,7 +59,7 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('INV-001')
             ->assertSee($supplier->name)
             ->assertSee('1 partida')
-            ->assertSee('$35.67')
+            ->assertSee('$30.75')
             ->assertSee('Ver detalle')
             ->assertDontSee('Editar')
             ->assertDontSee('Eliminar');
@@ -154,15 +154,18 @@ class EntryInterfaceTest extends TestCase
             ->assertOk()
             ->assertSee('Flete')
             ->assertSee('$75.25')
-            ->assertSee('$13.64')
-            ->assertSee('$98.89');
+            ->assertSee('$12.04')
+            ->assertSee('$97.29');
     }
 
     public function test_create_exposes_medication_tax_status_and_show_identifies_exempt_items(): void
     {
         $warehouse = Warehouse::factory()->create();
         $supplier = Supplier::factory()->for($warehouse)->create();
-        $category = Category::factory()->create(['name' => Product::MEDICATION_CATEGORY]);
+        $category = Category::factory()->create([
+            'key' => Product::MEDICATION_CATEGORY_KEY,
+            'name' => 'Medicamentos',
+        ]);
         $product = Product::factory()->for($category)->create(['name' => 'Medicamento exento']);
         $inventoryItem = InventoryItem::factory()->forWarehouse($warehouse)->for($product)->create();
         $administrator = User::factory()->administrator()->create();
@@ -170,7 +173,7 @@ class EntryInterfaceTest extends TestCase
         $this->actingAs($administrator)
             ->get(route('warehouses.entries.create', $warehouse))
             ->assertOk()
-            ->assertSee('isMedication')
+            ->assertSee('isVatTaxable')
             ->assertSee('IVA aplicable (16%)');
 
         $entry = $this->createEntry($warehouse, $supplier, $inventoryItem, quantity: '2', cost: '50.0000');
@@ -231,8 +234,8 @@ class EntryInterfaceTest extends TestCase
             ->assertSee('31/12/2027')
             ->assertSee('$10.31')
             ->assertSee('IVA aplicable (16%)')
-            ->assertSee('$1.65')
-            ->assertSee('$11.96')
+            ->assertSee('$0.00')
+            ->assertSee('$10.31')
             ->assertSee('Volver a entradas')
             ->assertDontSee('Editar')
             ->assertDontSee('Eliminar');

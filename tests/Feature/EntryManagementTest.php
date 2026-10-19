@@ -282,8 +282,8 @@ class EntryManagementTest extends TestCase
         $this->assertSame('30.7500000', $entry->items[0]->subtotal);
         $this->assertSame('10.3125000', $entry->items[1]->subtotal);
         $this->assertSame('41.0625000', $entry->subtotal);
-        $this->assertSame('6.5700000', $entry->vat);
-        $this->assertSame('47.6325000', $entry->total);
+        $this->assertSame('0.0000000', $entry->vat);
+        $this->assertSame('41.0625000', $entry->total);
     }
 
     public function test_freight_is_required_for_configured_supplier_and_is_taxed_at_sixteen_percent(): void
@@ -306,8 +306,8 @@ class EntryManagementTest extends TestCase
 
         $this->assertSame('125.50', $entry->freight_cost);
         $this->assertSame('30.7500000', $entry->subtotal);
-        $this->assertSame('25.0000000', $entry->vat);
-        $this->assertSame('181.2500000', $entry->total);
+        $this->assertSame('20.0800000', $entry->vat);
+        $this->assertSame('176.3300000', $entry->total);
     }
 
     public function test_freight_is_ignored_when_supplier_is_not_configured_to_charge_it(): void
@@ -323,21 +323,41 @@ class EntryManagementTest extends TestCase
         $entry = Entry::query()->firstOrFail();
 
         $this->assertSame('0.00', $entry->freight_cost);
-        $this->assertSame('35.6700000', $entry->total);
+        $this->assertSame('30.7500000', $entry->total);
     }
 
-    public function test_medications_are_vat_exempt_and_other_products_keep_sixteen_percent_rate(): void
+    public function test_only_healing_material_is_taxed_and_other_supplies_and_medications_are_exempt(): void
     {
         $warehouse = Warehouse::factory()->create();
         $supplier = Supplier::factory()->for($warehouse)->create();
-        $medicationCategory = Category::factory()->create(['name' => Product::MEDICATION_CATEGORY]);
+        $medicationCategory = Category::factory()->create([
+            'key' => Product::MEDICATION_CATEGORY_KEY,
+            'name' => 'Medicamentos',
+        ]);
         $medication = InventoryItem::factory()->forWarehouse($warehouse)->for(
             Product::factory()->for($medicationCategory)->create(),
         )->create();
-        $supply = InventoryItem::factory()->forWarehouse($warehouse)->create();
+        $supplyCategory = Category::factory()->create(['name' => 'Insumo médico']);
+        $supply = InventoryItem::factory()->forWarehouse($warehouse)->for(
+            Product::factory()->for($supplyCategory)->create(),
+        )->create();
+        $healingCategory = Category::factory()->create([
+            'key' => Product::VAT_TAXABLE_CATEGORY_KEY,
+            'name' => 'Material para curación',
+        ]);
+        $healingMaterial = InventoryItem::factory()->forWarehouse($warehouse)->for(
+            Product::factory()->for($healingCategory)->create(),
+        )->create();
         $payload = $this->payload($supplier, $medication, quantity: '2', unitCost: '50.0000');
         $payload['items'][] = [
             'inventory_item_id' => $supply->id,
+            'quantity' => '1',
+            'unit_cost' => '100.0000',
+            'manufacturer_lot' => null,
+            'expiration_date' => null,
+        ];
+        $payload['items'][] = [
+            'inventory_item_id' => $healingMaterial->id,
             'quantity' => '1',
             'unit_cost' => '100.0000',
             'manufacturer_lot' => null,
@@ -351,21 +371,27 @@ class EntryManagementTest extends TestCase
         $entry = Entry::query()->with('items')->firstOrFail();
         $medicationItem = $entry->items->firstWhere('inventory_item_id', $medication->id);
         $supplyItem = $entry->items->firstWhere('inventory_item_id', $supply->id);
+        $healingItem = $entry->items->firstWhere('inventory_item_id', $healingMaterial->id);
 
         $this->assertSame('0.0000', $medicationItem->vat_rate);
         $this->assertSame('0.0000000', $medicationItem->vat);
-        $this->assertSame('0.1600', $supplyItem->vat_rate);
-        $this->assertSame('16.0000000', $supplyItem->vat);
-        $this->assertSame('200.0000000', $entry->subtotal);
+        $this->assertSame('0.0000', $supplyItem->vat_rate);
+        $this->assertSame('0.0000000', $supplyItem->vat);
+        $this->assertSame('0.1600', $healingItem->vat_rate);
+        $this->assertSame('16.0000000', $healingItem->vat);
+        $this->assertSame('300.0000000', $entry->subtotal);
         $this->assertSame('16.0000000', $entry->vat);
-        $this->assertSame('216.0000000', $entry->total);
+        $this->assertSame('316.0000000', $entry->total);
     }
 
     public function test_medication_category_is_recognized_by_its_canonical_plural_name(): void
     {
         $warehouse = Warehouse::factory()->create();
         $supplier = Supplier::factory()->for($warehouse)->create();
-        $category = Category::factory()->create(['name' => 'Medicamentos']);
+        $category = Category::factory()->create([
+            'key' => Product::MEDICATION_CATEGORY_KEY,
+            'name' => 'Medicamentos',
+        ]);
         $omeprazole = InventoryItem::factory()->forWarehouse($warehouse)->for(
             Product::factory()->for($category)->create(['name' => 'OMEPRAZOL 40MG/10 ML AMPULA']),
         )->create();

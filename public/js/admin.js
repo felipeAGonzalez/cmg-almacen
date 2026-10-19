@@ -474,7 +474,7 @@ document.addEventListener('DOMContentLoaded', function () {
             row.querySelector('[data-entry-unit-cost-display]').textContent = unitMoney.format(unitCost);
             row.querySelector('[data-entry-subtotal]').textContent = money.format(totalCost);
             total += totalCost;
-            if (selected && !selected.isMedication) taxableTotal += totalCost;
+            if (selected?.isVatTaxable) taxableTotal += totalCost;
         });
         const freight = freightInput && !freightInput.disabled ? Number.parseFloat(freightInput.value) || 0 : 0;
         const vat = (taxableTotal + freight) * 0.16;
@@ -507,8 +507,8 @@ document.addEventListener('DOMContentLoaded', function () {
         expiration.required = required;
         state.textContent = required ? '*' : '(Opcional)';
         state.className = required ? 'text-danger' : 'text-body-secondary fw-normal';
-        taxStatus.textContent = selected ? (selected.isMedication ? 'Medicamento exento de IVA' : 'IVA 16%') : 'Selecciona un producto';
-        taxStatus.className = `badge ${selected?.isMedication ? 'text-bg-success' : 'text-bg-light border'}`;
+        taxStatus.textContent = selected ? (selected.isVatTaxable ? 'IVA 16% · Material de curación' : 'Exento de IVA') : 'Selecciona un producto';
+        taxStatus.className = `badge ${selected?.isVatTaxable ? 'text-bg-light border' : 'text-bg-success'}`;
     }
 
     function reindexRows() {
