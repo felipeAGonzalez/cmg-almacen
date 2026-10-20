@@ -3,9 +3,9 @@
 namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEntryRequest;
-use App\Models\Entry;
 use App\Models\Brand;
 use App\Models\Category;
+use App\Models\Entry;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
 use App\Models\Product;

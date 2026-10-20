@@ -3,8 +3,8 @@
 namespace Tests\Feature;
 
 use App\Enums\UserRole;
-use App\Models\Cabinet;
 use App\Models\Brand;
+use App\Models\Cabinet;
 use App\Models\Category;
 use App\Models\Entry;
 use App\Models\InventoryBatch;
