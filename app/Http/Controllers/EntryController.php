@@ -4,9 +4,12 @@ namespace App\Http\Controllers;
 
 use App\Http\Requests\StoreEntryRequest;
 use App\Models\Entry;
+use App\Models\Brand;
+use App\Models\Category;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
 use App\Models\Product;
+use App\Models\Unit;
 use App\Models\Warehouse;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -45,6 +48,10 @@ class EntryController extends Controller
             'warehouse' => $warehouse,
             'suppliers' => $warehouse->suppliers()->orderBy('name')->get(),
             'inventoryItems' => $this->inventoryItems($warehouse),
+            'units' => Unit::query()->orderBy('name')->get(),
+            'categories' => Category::query()->orderBy('name')->get(),
+            'brands' => Brand::query()->orderBy('name')->get(),
+            'locations' => $warehouse->locations()->orderBy('name')->get(),
         ]);
     }
 

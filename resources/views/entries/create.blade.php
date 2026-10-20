@@ -54,7 +54,7 @@
         </div>
     @endif
 
-    <form method="POST" action="{{ route('warehouses.entries.store', $warehouse) }}" data-entry-form novalidate>
+    <form method="POST" action="{{ route('warehouses.entries.store', $warehouse) }}" data-entry-form data-enter-add-product novalidate>
         @csrf
         <section class="admin-card mb-4">
             <div class="admin-card-header"><h3 class="h6 fw-bold mb-0">Datos de la factura</h3></div>
@@ -98,10 +98,14 @@
 
         <section class="admin-card mb-4" data-entry-items data-inventory-options='@json($inventoryOptions)'>
             <div class="admin-card-header d-flex flex-wrap justify-content-between align-items-center gap-2">
-                <div><h3 class="h6 fw-bold mb-1">Productos recibidos</h3><p class="small text-body-secondary mb-0">Cada partida generará un lote interno de inventario.</p></div>
-                <button type="button" class="btn btn-sm btn-outline-primary" data-add-entry-item><i class="bi bi-plus-circle me-1"></i>Agregar producto</button>
+                <div><h3 class="h6 fw-bold mb-1">Productos recibidos</h3><p class="small text-body-secondary mb-0">Cada partida generará un lote interno de inventario. Presiona Enter en una partida para agregar otro producto.</p></div>
+                <div class="d-flex flex-wrap gap-2">
+                    <button type="button" class="btn btn-sm btn-outline-secondary" data-bs-toggle="modal" data-bs-target="#entryProductModal" data-create-entry-product><i class="bi bi-box-seam me-1"></i>Crear producto nuevo</button>
+                    <button type="button" class="btn btn-sm btn-outline-primary" data-add-entry-item><i class="bi bi-plus-circle me-1"></i>Agregar producto</button>
+                </div>
             </div>
             <div class="p-3 p-lg-4">
+                <div class="alert alert-success d-none" role="status" data-entry-product-created></div>
                 @error('items')<div class="alert alert-danger py-2">{{ $message }}</div>@enderror
                 <div class="entry-items" data-entry-items-list>
                     @foreach ($submittedItems as $index => $submittedItem)
@@ -123,6 +127,95 @@
             <button type="submit" class="btn btn-primary" data-entry-submit @disabled($suppliers->isEmpty() || $inventoryItems->isEmpty())><i class="bi bi-check-circle me-2"></i>Registrar entrada</button>
         </div>
     </form>
+
+    <div class="modal fade" id="entryProductModal" tabindex="-1" aria-labelledby="entryProductModalLabel" aria-hidden="true">
+        <div class="modal-dialog modal-xl modal-dialog-scrollable">
+            <div class="modal-content">
+                <form data-entry-product-form data-store-url="{{ route('warehouses.entries.products.store', $warehouse) }}" novalidate>
+                    <div class="modal-header">
+                        <div>
+                            <h2 class="modal-title fs-5" id="entryProductModalLabel">Crear producto sin perder la entrada</h2>
+                            <p class="small text-body-secondary mb-0">El producto también quedará configurado en {{ $warehouse->name }}.</p>
+                        </div>
+                        <button type="button" class="btn-close" data-bs-dismiss="modal" aria-label="Cerrar"></button>
+                    </div>
+                    <div class="modal-body">
+                        <div class="alert alert-danger d-none" role="alert" data-entry-product-errors aria-live="assertive"></div>
+                        <div class="row g-3">
+                            <div class="col-md-6">
+                                <label for="entry_product_name" class="form-label">Ingrediente activo o nombre del producto <span class="text-danger">*</span></label>
+                                <input id="entry_product_name" name="name" class="form-control" maxlength="255" required>
+                                <div class="invalid-feedback" data-error-for="name"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="entry_product_commercial_name" class="form-label">Nombre comercial <span class="text-body-secondary fw-normal">(Opcional)</span></label>
+                                <input id="entry_product_commercial_name" name="commercial_name" class="form-control" maxlength="255">
+                                <div class="invalid-feedback" data-error-for="commercial_name"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="entry_product_code" class="form-label">Código interno</label>
+                                <input id="entry_product_code" name="code" class="form-control" maxlength="100">
+                                <div class="invalid-feedback" data-error-for="code"></div>
+                            </div>
+                            <div class="col-md-6">
+                                <label for="entry_product_barcode" class="form-label">Código de barras</label>
+                                <input id="entry_product_barcode" name="barcode" class="form-control" maxlength="100">
+                                <div class="invalid-feedback" data-error-for="barcode"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entry_product_unit" class="form-label">Unidad de medida <span class="text-danger">*</span></label>
+                                <select id="entry_product_unit" name="unit_id" class="form-select" required><option value="">Selecciona una unidad</option>@foreach($units as $unit)<option value="{{ $unit->id }}">{{ $unit->name }}</option>@endforeach</select>
+                                <div class="invalid-feedback" data-error-for="unit_id"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entry_product_category" class="form-label">Categoría <span class="text-danger">*</span></label>
+                                <select id="entry_product_category" name="category_id" class="form-select" required><option value="">Selecciona una categoría</option>@foreach($categories as $category)<option value="{{ $category->id }}">{{ $category->name }}</option>@endforeach</select>
+                                <div class="invalid-feedback" data-error-for="category_id"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entry_product_brand" class="form-label">Marca <span class="text-danger">*</span></label>
+                                <select id="entry_product_brand" name="brand_id" class="form-select" required><option value="">Selecciona una marca</option>@foreach($brands as $brand)<option value="{{ $brand->id }}">{{ $brand->name }}</option>@endforeach</select>
+                                <div class="invalid-feedback" data-error-for="brand_id"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entry_product_location" class="form-label">Ubicación <span class="text-body-secondary fw-normal">(Opcional)</span></label>
+                                <select id="entry_product_location" name="location_id" class="form-select"><option value="">Sin ubicación</option>@foreach($locations as $location)<option value="{{ $location->id }}">{{ $location->name }}</option>@endforeach</select>
+                                <div class="invalid-feedback" data-error-for="location_id"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entry_product_minimum" class="form-label">Stock mínimo <span class="text-danger">*</span></label>
+                                <input id="entry_product_minimum" name="minimum_stock" type="number" min="0" step="0.001" class="form-control" required>
+                                <div class="invalid-feedback" data-error-for="minimum_stock"></div>
+                            </div>
+                            <div class="col-md-4">
+                                <label for="entry_product_maximum" class="form-label">Stock máximo <span class="text-danger">*</span></label>
+                                <input id="entry_product_maximum" name="maximum_stock" type="number" min="0" step="0.001" class="form-control" required>
+                                <div class="invalid-feedback" data-error-for="maximum_stock"></div>
+                            </div>
+                            <div class="col-12">
+                                <div class="form-check form-switch">
+                                    <input type="hidden" name="requires_expiration" value="0">
+                                    <input id="entry_product_expiration" name="requires_expiration" value="1" type="checkbox" class="form-check-input" role="switch">
+                                    <label for="entry_product_expiration" class="form-check-label">Controlar caducidad</label>
+                                </div>
+                                <div class="invalid-feedback" data-error-for="requires_expiration"></div>
+                            </div>
+                            <div class="col-12">
+                                <label for="entry_product_description" class="form-label">Descripción <span class="text-body-secondary fw-normal">(Opcional)</span></label>
+                                <textarea id="entry_product_description" name="description" rows="2" maxlength="2000" class="form-control"></textarea>
+                                <div class="invalid-feedback" data-error-for="description"></div>
+                            </div>
+                        </div>
+                        <p class="small text-body-secondary mt-3 mb-0">Debes capturar al menos un código interno o un código de barras.</p>
+                    </div>
+                    <div class="modal-footer">
+                        <button type="button" class="btn btn-light border" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn btn-primary" data-entry-product-submit><i class="bi bi-check-lg me-1"></i><span data-entry-product-submit-label>Crear y seleccionar</span></button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
 
     <template data-entry-item-template>
         @include('entries._item', ['index' => '__INDEX__', 'item' => [], 'inventoryItems' => $inventoryItems])

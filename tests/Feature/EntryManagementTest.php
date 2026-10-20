@@ -4,12 +4,14 @@ namespace Tests\Feature;
 
 use App\Enums\UserRole;
 use App\Models\Cabinet;
+use App\Models\Brand;
 use App\Models\Category;
 use App\Models\Entry;
 use App\Models\InventoryBatch;
 use App\Models\InventoryItem;
 use App\Models\Product;
 use App\Models\Supplier;
+use App\Models\Unit;
 use App\Models\User;
 use App\Models\Warehouse;
 use Illuminate\Database\QueryException;
@@ -20,6 +22,62 @@ use Tests\TestCase;
 class EntryManagementTest extends TestCase
 {
     use RefreshDatabase;
+
+    public function test_assigned_manager_can_create_and_configure_a_product_without_leaving_the_entry(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $manager = User::factory()->warehouseManager()->create();
+        $manager->warehouses()->attach($warehouse);
+        $unit = Unit::factory()->create();
+        $category = Category::factory()->create(['key' => Product::VAT_TAXABLE_CATEGORY_KEY]);
+        $brand = Brand::factory()->create();
+        $location = $warehouse->locations()->create(['name' => 'Anaquel A']);
+
+        $response = $this->actingAs($manager)->postJson(
+            route('warehouses.entries.products.store', $warehouse),
+            [
+                'name' => 'Abatelenguas de madera',
+                'commercial_name' => 'Marca Clínica',
+                'code' => 'ABA-001',
+                'barcode' => null,
+                'unit_id' => $unit->id,
+                'category_id' => $category->id,
+                'brand_id' => $brand->id,
+                'description' => 'Paquete con 25 piezas.',
+                'requires_expiration' => false,
+                'location_id' => $location->id,
+                'minimum_stock' => '10',
+                'maximum_stock' => '100',
+            ],
+        );
+
+        $response->assertCreated()
+            ->assertJsonPath('inventory_item.name', 'Abatelenguas de madera')
+            ->assertJsonPath('inventory_item.isVatTaxable', true);
+
+        $product = Product::query()->where('code', 'ABA-001')->firstOrFail();
+        $this->assertDatabaseHas('inventory_items', [
+            'stockable_type' => 'warehouse',
+            'stockable_id' => $warehouse->id,
+            'product_id' => $product->id,
+            'location_id' => $location->id,
+            'minimum_stock' => '10.000',
+            'maximum_stock' => '100.000',
+        ]);
+    }
+
+    public function test_product_creation_from_entry_is_scoped_to_the_assigned_warehouse(): void
+    {
+        $warehouse = Warehouse::factory()->create();
+        $unassignedManager = User::factory()->warehouseManager()->create();
+
+        $this->actingAs($unassignedManager)
+            ->postJson(route('warehouses.entries.products.store', $warehouse), [])
+            ->assertForbidden();
+
+        $this->assertDatabaseCount('products', 0);
+        $this->assertDatabaseCount('inventory_items', 0);
+    }
 
     public function test_administrator_and_root_can_list_entries_from_any_warehouse(): void
     {

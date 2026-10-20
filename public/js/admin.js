@@ -140,6 +140,22 @@ function refreshProductPicker(picker) {
     picker?.productPickerRefresh?.();
 }
 
+function bindEnterToAddProduct(form, itemSelector, addButton) {
+    form.addEventListener('keydown', function (event) {
+        if (event.key !== 'Enter' || event.isComposing) return;
+
+        const target = event.target;
+        if (!(target instanceof HTMLElement)) return;
+        if (target.matches('textarea, button, a, [data-product-search-input]')) return;
+
+        event.preventDefault();
+
+        if (target.closest(itemSelector) && !addButton.disabled) {
+            addButton.click();
+        }
+    });
+}
+
 document.addEventListener('click', function (event) {
     document.querySelectorAll('[data-product-picker-menu]').forEach(function (menu) {
         if (!menu.closest('[data-product-picker]')?.contains(event.target)) {
@@ -456,6 +472,8 @@ document.addEventListener('DOMContentLoaded', function () {
     const supplierSelect = entryForm.querySelector('[data-entry-supplier]');
     const freightContainer = entryForm.querySelector('[data-entry-freight-container]');
     const freightInput = entryForm.querySelector('[data-entry-freight-cost]');
+    const productForm = document.querySelector('[data-entry-product-form]');
+    const productCreated = entryItems.querySelector('[data-entry-product-created]');
     const inventoryById = new Map(inventoryOptions.map(function (item) {
         return [String(item.id), item];
     }));
@@ -544,10 +562,11 @@ document.addEventListener('DOMContentLoaded', function () {
     list.querySelectorAll('[data-entry-item]').forEach(initializeRow);
     reindexRows();
     updateFreightVisibility();
+    bindEnterToAddProduct(entryForm, '[data-entry-item]', addButton);
     supplierSelect?.addEventListener('change', updateFreightVisibility);
     freightInput?.addEventListener('input', calculateTotals);
 
-    addButton.addEventListener('click', function () {
+    function addEntryRow() {
         const wrapper = document.createElement('div');
         wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', list.querySelectorAll('[data-entry-item]').length).trim();
         const row = wrapper.firstElementChild;
@@ -555,7 +574,99 @@ document.addEventListener('DOMContentLoaded', function () {
         initializeRow(row);
         reindexRows();
         row.querySelector('[data-product-search-input]')?.focus();
-    });
+
+        return row;
+    }
+
+    addButton.addEventListener('click', addEntryRow);
+
+    if (productForm) {
+        const productSubmit = productForm.querySelector('[data-entry-product-submit]');
+        const productSubmitLabel = productForm.querySelector('[data-entry-product-submit-label]');
+        const productErrors = productForm.querySelector('[data-entry-product-errors]');
+
+        function clearProductErrors() {
+            productErrors.classList.add('d-none');
+            productErrors.textContent = '';
+            productForm.querySelectorAll('.is-invalid').forEach(function (field) { field.classList.remove('is-invalid'); });
+            productForm.querySelectorAll('[data-error-for]').forEach(function (feedback) { feedback.textContent = ''; });
+        }
+
+        function appendProductOption(select, item) {
+            if (Array.from(select.options).some(function (option) { return option.value === String(item.id); })) return;
+
+            const option = document.createElement('option');
+            option.value = String(item.id);
+            option.dataset.productSearch = item.searchText;
+            option.textContent = `${item.name}${item.commercialName ? ` — Comercial: ${item.commercialName}` : ''}${item.identifier ? ` — ${item.identifier}` : ''} — ${item.unit}`;
+            select.appendChild(option);
+        }
+
+        productForm.addEventListener('submit', async function (event) {
+            event.preventDefault();
+            clearProductErrors();
+            productSubmit.disabled = true;
+            productSubmitLabel.textContent = 'Creando...';
+
+            try {
+                const response = await fetch(productForm.dataset.storeUrl, {
+                    method: 'POST',
+                    headers: {
+                        Accept: 'application/json',
+                        'X-CSRF-TOKEN': document.querySelector('meta[name="csrf-token"]').content,
+                    },
+                    body: new FormData(productForm),
+                });
+                const payload = await response.json();
+
+                if (!response.ok) {
+                    if (response.status === 422 && payload.errors) {
+                        Object.entries(payload.errors).forEach(function ([field, messages]) {
+                            const input = productForm.elements.namedItem(field);
+                            input?.classList?.add('is-invalid');
+                            const feedback = productForm.querySelector(`[data-error-for="${CSS.escape(field)}"]`);
+                            if (feedback) feedback.textContent = messages[0];
+                        });
+                        productErrors.textContent = 'Revisa los campos marcados antes de continuar.';
+                    } else {
+                        productErrors.textContent = 'No fue posible crear el producto. Inténtalo nuevamente.';
+                    }
+                    productErrors.classList.remove('d-none');
+                    return;
+                }
+
+                const item = payload.inventory_item;
+                inventoryOptions.push(item);
+                inventoryById.set(String(item.id), item);
+                document.querySelectorAll('[data-entry-product]').forEach(function (select) { appendProductOption(select, item); });
+                const templateSelect = template.content.querySelector('[data-entry-product]');
+                if (templateSelect) appendProductOption(templateSelect, item);
+
+                let targetRow = Array.from(list.querySelectorAll('[data-entry-item]')).find(function (row) {
+                    return !row.querySelector('[data-entry-product]').value;
+                });
+                if (!targetRow) targetRow = addEntryRow();
+
+                const targetSelect = targetRow.querySelector('[data-entry-product]');
+                targetSelect.value = String(item.id);
+                targetSelect.dispatchEvent(new Event('change', { bubbles: true }));
+                refreshProductPicker(targetRow.querySelector('[data-product-picker]'));
+                targetRow.querySelector('[data-entry-quantity]')?.focus();
+
+                entryForm.querySelector('[data-entry-submit]').disabled = false;
+                productCreated.textContent = payload.message;
+                productCreated.classList.remove('d-none');
+                productForm.reset();
+                window.bootstrap?.Modal.getOrCreateInstance(document.getElementById('entryProductModal')).hide();
+            } catch (error) {
+                productErrors.textContent = 'No fue posible crear el producto. Verifica tu conexión e inténtalo nuevamente.';
+                productErrors.classList.remove('d-none');
+            } finally {
+                productSubmit.disabled = false;
+                productSubmitLabel.textContent = 'Crear y seleccionar';
+            }
+        });
+    }
 
     entryForm.addEventListener('submit', function () {
         const submitButton = entryForm.querySelector('[data-entry-submit]');
@@ -811,6 +922,7 @@ document.addEventListener('DOMContentLoaded', function () {
     updatePatientCareFields();
     list.querySelectorAll('[data-outbound-item]').forEach(initializeRow);
     reindexRows(); updateRows();
+    bindEnterToAddProduct(form, '[data-outbound-item]', addButton);
     addButton.addEventListener('click', function () {
         const wrapper = document.createElement('div');
         wrapper.innerHTML = template.innerHTML.replaceAll('__INDEX__', list.querySelectorAll('[data-outbound-item]').length).trim();

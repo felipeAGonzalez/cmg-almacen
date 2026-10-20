@@ -71,6 +71,8 @@ class InventoryOutboundInterfaceTest extends TestCase
         $response = $this->actingAs($user)->get(route('warehouses.outbounds.create', $warehouse));
         $response->assertOk()->assertSee($item->product->name)->assertSee('Comercial: Marca Salida')
             ->assertSee('Buscar por ingrediente activo o nombre comercial')->assertSee('data-product-search-select', false)
+            ->assertSee('data-enter-add-product', false)
+            ->assertSee('Presiona Enter en una partida para agregar otro producto.')
             ->assertDontSee($other->product->name)
             ->assertSee($cabinetItem->product->name)->assertSee('usableStock')->assertSee('7.5')
             ->assertSee('items[0][inventory_item_id]', false)->assertSee('items[0][quantity]', false)

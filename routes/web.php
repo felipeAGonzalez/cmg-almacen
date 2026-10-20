@@ -8,6 +8,7 @@ use App\Http\Controllers\CabinetInventoryController;
 use App\Http\Controllers\CategoryController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\EntryController;
+use App\Http\Controllers\EntryProductController;
 use App\Http\Controllers\HealthController;
 use App\Http\Controllers\HospitalDelegatedAuthController;
 use App\Http\Controllers\HospitalIntegrationController;
@@ -132,6 +133,10 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
         Route::post('warehouses/{warehouse}/entries/returns', 'store')->name('warehouses.entries.returns.store');
         Route::get('warehouses/{warehouse}/entries/returns/{inventoryOutboundReturn}', 'show')->name('warehouses.entries.returns.show');
     });
+
+    Route::post('warehouses/{warehouse}/entries/products', EntryProductController::class)
+        ->middleware('entry.access')
+        ->name('warehouses.entries.products.store');
 
     Route::resource('warehouses.entries', EntryController::class)
         ->only(['index', 'create', 'store', 'show'])
