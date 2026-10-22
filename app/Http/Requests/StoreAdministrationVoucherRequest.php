@@ -20,7 +20,7 @@ class StoreAdministrationVoucherRequest extends FormRequest
             'notes' => ['nullable', 'string', 'max:2000'],
             'items' => ['required', 'array', 'min:1'],
             'items.*.product_id' => ['required', 'integer', 'distinct', 'exists:products,id'],
-            'items.*.quantity' => ['required', 'numeric', 'gt:0'],
+            'items.*.quantity' => ['bail', 'required', 'regex:/^[1-9][0-9]*$/', 'max_digits:12'],
         ];
     }
 
@@ -33,13 +33,19 @@ class StoreAdministrationVoucherRequest extends FormRequest
             'items.required' => 'Debes agregar al menos un producto.',
             'items.min' => 'Debes agregar al menos un producto.',
             'items.*.product_id.distinct' => 'El producto está repetido en el vale.',
-            'items.*.quantity.gt' => 'La cantidad debe ser mayor que cero.',
+            'items.*.product_id.required' => 'Selecciona un producto.',
+            'items.*.product_id.exists' => 'El producto seleccionado ya no está disponible.',
+            'items.*.quantity.required' => 'La cantidad es obligatoria.',
+            'items.*.quantity.regex' => 'La cantidad debe ser un número entero mayor que cero, sin decimales ni espacios.',
+            'items.*.quantity.max_digits' => 'La cantidad no puede tener más de 12 dígitos.',
         ];
     }
 
     protected function prepareForValidation(): void
     {
         $notes = $this->input('notes');
-        $this->merge(['notes' => is_string($notes) && trim($notes) !== '' ? trim($notes) : null]);
+        $this->merge([
+            'notes' => is_string($notes) && trim($notes) !== '' ? trim($notes) : null,
+        ]);
     }
 }

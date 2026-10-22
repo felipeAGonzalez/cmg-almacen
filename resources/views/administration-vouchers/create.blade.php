@@ -10,6 +10,12 @@
 @section('page-title', $isEditing ? 'Modificar vale de Administración' : 'Crear vale de Administración')
 @section('content')
 <h2>{{ $isEditing ? 'Modificar vale de Administración #'.$voucher->id : 'Crear vale de Administración' }}</h2><p class="text-body-secondary">{{ $isEditing ? 'Corrige el pedido antes de que comience su surtido.' : 'Solicita productos para reponer un gabinete.' }}</p>
+@if($errors->any())
+<div class="alert alert-danger" role="alert" aria-live="polite">
+    <h3 class="h6 fw-bold">Revisa la información del vale</h3>
+    <ul class="mb-0">@foreach(array_unique($errors->all()) as $message)<li>{{ $message }}</li>@endforeach</ul>
+</div>
+@endif
 <form method="POST" action="{{ $isEditing ? route('administration-vouchers.update', $voucher) : route('administration-vouchers.store') }}" class="card card-body border-0 shadow-sm" id="administration-voucher-form">@csrf @if($isEditing) @method('PUT') @endif
 <div class="row g-3"><div class="col-md-6"><label class="form-label">Almacén</label><select name="warehouse_id" id="admin-warehouse" class="form-select @error('warehouse_id') is-invalid @enderror" required><option value="">Selecciona un almacén</option>@foreach($warehouses as $warehouse)<option value="{{ $warehouse->id }}" @selected((string)$selectedWarehouse===(string)$warehouse->id)>{{ $warehouse->name }}</option>@endforeach</select>@error('warehouse_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div><div class="col-md-6"><label class="form-label">Gabinete</label><select name="cabinet_id" id="admin-cabinet" class="form-select @error('cabinet_id') is-invalid @enderror" required><option value="">Selecciona un gabinete</option></select>@error('cabinet_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div></div>
 <hr><div class="d-flex justify-content-between"><h3 class="h5">Productos</h3><button type="button" class="btn btn-outline-primary btn-sm" id="add-admin-item">Agregar producto</button></div><div id="admin-items" class="d-grid gap-3 mt-3"></div>@error('items')<div class="text-danger small">{{ $message }}</div>@enderror
@@ -23,6 +29,7 @@ document.addEventListener('DOMContentLoaded', () => {
     const box = document.querySelector('#admin-items');
     const oldCabinet = @json($selectedCabinet);
     const oldItems = @json($initialItems);
+    const validationErrors = @json($errors->getMessages());
     let rows = oldItems;
     const escapeHtml = value => String(value ?? '').replace(/[&<>'"]/g, character => ({'&':'&amp;','<':'&lt;','>':'&gt;',"'":'&#039;','"':'&quot;'}[character]));
 
@@ -55,7 +62,9 @@ document.addEventListener('DOMContentLoaded', () => {
                 return `<option value="${escapeHtml(product.id)}" data-product-search="${escapeHtml(search)}" ${String(product.id) === String(row.product_id) ? 'selected' : ''}>${escapeHtml(label)}</option>`;
             }).join('');
             const placeholder = products().length > 0 ? 'Selecciona un producto' : emptyProductMessage();
-            wrapper.innerHTML = `<div class="col-md-7" data-product-picker><label class="form-label">Producto</label><input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto ${index + 1}"><select class="form-select" data-admin-product data-product-search-select name="items[${index}][product_id]" required><option value="">${escapeHtml(placeholder)}</option>${options}</select></div><div class="col-md-3"><label class="form-label">Cantidad</label><input class="form-control" data-admin-quantity type="number" step="0.001" min="0.001" name="items[${index}][quantity]" value="${escapeHtml(row.quantity || '')}" required></div><div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100">Quitar</button></div>`;
+            const productError = validationErrors[`items.${index}.product_id`]?.[0] || '';
+            const quantityError = validationErrors[`items.${index}.quantity`]?.[0] || '';
+            wrapper.innerHTML = `<div class="col-md-7" data-product-picker><label class="form-label">Producto</label><input type="search" class="form-control form-control-sm mb-2" placeholder="Buscar por ingrediente activo o nombre comercial" autocomplete="off" data-product-search-input aria-label="Buscar producto ${index + 1}"><select class="form-select${productError ? ' is-invalid' : ''}" data-admin-product data-product-search-select name="items[${index}][product_id]" required><option value="">${escapeHtml(placeholder)}</option>${options}</select>${productError ? `<div class="invalid-feedback d-block">${escapeHtml(productError)}</div>` : ''}</div><div class="col-md-3"><label class="form-label">Cantidad</label><input class="form-control${quantityError ? ' is-invalid' : ''}" data-admin-quantity type="text" inputmode="numeric" pattern="[1-9][0-9]*" title="Ingresa un número entero mayor que cero, sin decimales ni espacios." autocomplete="off" maxlength="12" name="items[${index}][quantity]" value="${escapeHtml(row.quantity || '')}" aria-describedby="admin-quantity-help-${index}${quantityError ? ` admin-quantity-error-${index}` : ''}" required><div id="admin-quantity-help-${index}" class="form-text">Sólo números enteros mayores que cero; sin espacios.</div>${quantityError ? `<div id="admin-quantity-error-${index}" class="invalid-feedback d-block">${escapeHtml(quantityError)}</div>` : ''}</div><div class="col-md-2"><button type="button" class="btn btn-outline-danger w-100">Quitar</button></div>`;
             wrapper.querySelector('button').onclick = () => {
                 syncRows();
                 if (rows.length > 1) {

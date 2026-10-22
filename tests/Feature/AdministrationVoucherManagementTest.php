@@ -106,6 +106,43 @@ class AdministrationVoucherManagementTest extends TestCase
         app(AdministrationVoucherService::class)->create($admin, $warehouse, $cabinet, [['product_id' => $other->id, 'quantity' => 1]]);
     }
 
+    public function test_quantities_require_positive_integers_without_decimals_or_spaces_and_show_the_error(): void
+    {
+        [$warehouse, $cabinet, $product] = $this->context();
+        $admin = User::factory()->administrator()->create();
+        $this->actingAs($admin);
+
+        foreach (['1.5', '1,5', '1 2'] as $invalidQuantity) {
+            $this->from(route('administration-vouchers.create'))->post(route('administration-vouchers.store'), [
+                'warehouse_id' => $warehouse->id,
+                'cabinet_id' => $cabinet->id,
+                'items' => [['product_id' => $product->id, 'quantity' => $invalidQuantity]],
+            ])->assertRedirect(route('administration-vouchers.create'))
+                ->assertSessionHasErrors([
+                    'items.0.quantity' => 'La cantidad debe ser un número entero mayor que cero, sin decimales ni espacios.',
+                ]);
+        }
+
+        $this->followingRedirects()
+            ->from(route('administration-vouchers.create'))
+            ->post(route('administration-vouchers.store'), [
+                'warehouse_id' => $warehouse->id,
+                'cabinet_id' => $cabinet->id,
+                'items' => [['product_id' => $product->id, 'quantity' => 'dos']],
+            ])
+            ->assertOk()
+            ->assertSee('La cantidad debe ser un número entero mayor que cero, sin decimales ni espacios.')
+            ->assertSee('dos');
+
+        $this->post(route('administration-vouchers.store'), [
+            'warehouse_id' => $warehouse->id,
+            'cabinet_id' => $cabinet->id,
+            'items' => [['product_id' => $product->id, 'quantity' => '12']],
+        ])->assertSessionHasNoErrors();
+
+        $this->assertSame('12.000', AdministrationVoucher::query()->latest('id')->firstOrFail()->items()->firstOrFail()->requested_quantity);
+    }
+
     public function test_admin_can_replace_a_pending_request_before_fulfillment(): void
     {
         [$warehouse, $cabinet, $product] = $this->context();
@@ -125,7 +162,7 @@ class AdministrationVoucherManagementTest extends TestCase
         $this->actingAs($admin)->put(route('administration-vouchers.update', $voucher), [
             'warehouse_id' => $warehouse->id,
             'cabinet_id' => $cabinet->id,
-            'items' => [['product_id' => $replacement->id, 'quantity' => '4.500']],
+            'items' => [['product_id' => $replacement->id, 'quantity' => '4']],
             'notes' => 'Pedido corregido',
         ])->assertRedirect(route('administration-vouchers.show', $voucher))
             ->assertSessionHasNoErrors();
@@ -136,7 +173,7 @@ class AdministrationVoucherManagementTest extends TestCase
         $this->assertSame('Pedido corregido', $fresh->notes);
         $this->assertCount(1, $fresh->items);
         $this->assertSame($replacement->id, $fresh->items->first()->product_id);
-        $this->assertSame('4.500', $fresh->items->first()->requested_quantity);
+        $this->assertSame('4.000', $fresh->items->first()->requested_quantity);
         $this->assertSame('0.000', $fresh->items->first()->supplied_quantity);
     }
 
