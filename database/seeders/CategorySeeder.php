@@ -15,6 +15,7 @@ class CategorySeeder extends Seeder
             'healing_material' => ['Material para curación', 'Productos utilizados en limpieza, protección, cobertura o atención de heridas.'],
             'consumables' => ['Consumible', 'Artículos de uso frecuente que se agotan con su utilización.'],
             'medical_devices' => ['Dispositivo médico', 'Equipos, instrumentos o dispositivos utilizados en atención clínica.'],
+            'filters' => ['Filtros', 'Filtros utilizados en procedimientos y atención clínica.'],
         ];
 
         foreach ($categories as $key => [$name, $description]) {

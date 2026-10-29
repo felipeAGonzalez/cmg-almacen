@@ -18,6 +18,7 @@ class CategorySeederTest extends TestCase
         'healing_material' => 'Material para curación',
         'consumables' => 'Consumible',
         'medical_devices' => 'Dispositivo médico',
+        'filters' => 'Filtros',
     ];
 
     public function test_seeder_creates_the_initial_categories(): void
@@ -44,7 +45,7 @@ class CategorySeederTest extends TestCase
         $this->assertModelExists($existing);
         $this->assertSame(1, Category::query()->where('key', Product::MEDICATION_CATEGORY_KEY)->count());
         $this->assertSame('Descripción personalizada', Category::query()->where('key', Product::MEDICATION_CATEGORY_KEY)->value('description'));
-        $this->assertSame(6, Category::query()->count());
+        $this->assertSame(7, Category::query()->count());
     }
 
     public function test_seeded_categories_are_available_to_products(): void

@@ -12,6 +12,8 @@ class Product extends Model
 {
     public const MEDICATION_CATEGORY_KEY = 'medications';
 
+    public const FILTER_CATEGORY_KEY = 'filters';
+
     public const VAT_TAXABLE_CATEGORY_KEY = 'healing_material';
 
     /** @use HasFactory<ProductFactory> */
@@ -73,6 +75,10 @@ class Product extends Model
 
     public function isVatTaxable(): bool
     {
+        if ($this->category?->key === self::FILTER_CATEGORY_KEY) {
+            return false;
+        }
+
         return $this->category?->key === self::VAT_TAXABLE_CATEGORY_KEY;
     }
 }

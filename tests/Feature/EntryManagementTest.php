@@ -406,6 +406,13 @@ class EntryManagementTest extends TestCase
         $healingMaterial = InventoryItem::factory()->forWarehouse($warehouse)->for(
             Product::factory()->for($healingCategory)->create(),
         )->create();
+        $filterCategory = Category::factory()->create([
+            'key' => Product::FILTER_CATEGORY_KEY,
+            'name' => 'Filtros',
+        ]);
+        $filter = InventoryItem::factory()->forWarehouse($warehouse)->for(
+            Product::factory()->for($filterCategory)->create(),
+        )->create();
         $payload = $this->payload($supplier, $medication, quantity: '2', unitCost: '50.0000');
         $payload['items'][] = [
             'inventory_item_id' => $supply->id,
@@ -421,6 +428,13 @@ class EntryManagementTest extends TestCase
             'manufacturer_lot' => null,
             'expiration_date' => null,
         ];
+        $payload['items'][] = [
+            'inventory_item_id' => $filter->id,
+            'quantity' => '1',
+            'unit_cost' => '100.0000',
+            'manufacturer_lot' => null,
+            'expiration_date' => null,
+        ];
 
         $this->actingAs(User::factory()->administrator()->create())
             ->post(route('warehouses.entries.store', $warehouse), $payload)
@@ -430,6 +444,7 @@ class EntryManagementTest extends TestCase
         $medicationItem = $entry->items->firstWhere('inventory_item_id', $medication->id);
         $supplyItem = $entry->items->firstWhere('inventory_item_id', $supply->id);
         $healingItem = $entry->items->firstWhere('inventory_item_id', $healingMaterial->id);
+        $filterItem = $entry->items->firstWhere('inventory_item_id', $filter->id);
 
         $this->assertSame('0.0000', $medicationItem->vat_rate);
         $this->assertSame('0.0000000', $medicationItem->vat);
@@ -437,9 +452,11 @@ class EntryManagementTest extends TestCase
         $this->assertSame('0.0000000', $supplyItem->vat);
         $this->assertSame('0.1600', $healingItem->vat_rate);
         $this->assertSame('16.0000000', $healingItem->vat);
-        $this->assertSame('300.0000000', $entry->subtotal);
+        $this->assertSame('0.0000', $filterItem->vat_rate);
+        $this->assertSame('0.0000000', $filterItem->vat);
+        $this->assertSame('400.0000000', $entry->subtotal);
         $this->assertSame('16.0000000', $entry->vat);
-        $this->assertSame('316.0000000', $entry->total);
+        $this->assertSame('416.0000000', $entry->total);
     }
 
     public function test_medication_category_is_recognized_by_its_canonical_plural_name(): void
