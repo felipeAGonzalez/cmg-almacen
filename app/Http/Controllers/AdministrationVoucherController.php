@@ -10,6 +10,7 @@ use App\Http\Requests\UpdateAdministrationVoucherRequest;
 use App\Models\AdministrationVoucher;
 use App\Models\Cabinet;
 use App\Models\Warehouse;
+use App\Services\AdministrationVoucherConsumptionService;
 use App\Services\AdministrationVoucherService;
 use Illuminate\Database\Eloquent\Collection;
 use Illuminate\Http\RedirectResponse;
@@ -20,7 +21,7 @@ use Illuminate\View\View;
 
 class AdministrationVoucherController extends Controller
 {
-    public function index(Request $request): View
+    public function index(Request $request, AdministrationVoucherConsumptionService $consumptions): View
     {
         Gate::authorize('viewAny', AdministrationVoucher::class);
         $filters = $request->validate([
@@ -45,6 +46,9 @@ class AdministrationVoucherController extends Controller
             'statuses' => AdministrationVoucherStatus::cases(),
             'warehouses' => $user->isAdmin() ? Warehouse::query()->orderBy('name')->get() : $user->warehouses()->orderBy('name')->get(),
             'cabinets' => Cabinet::query()->orderBy('name')->get(),
+            'pendingConsumptions' => Gate::allows('create', AdministrationVoucher::class)
+                ? $consumptions->pendingGroups($user)
+                : collect(),
         ]);
     }
 
@@ -98,7 +102,7 @@ class AdministrationVoucherController extends Controller
     {
         Gate::authorize('view', $administrationVoucher);
         $administrationVoucher->load([
-            'requester', 'warehouse', 'cabinet', 'items.product.unit', 'cancelledBy', 'rejectedBy',
+            'requester', 'warehouse', 'cabinet', 'items.product.unit', 'cancelledBy', 'rejectedBy', 'consumptions.product',
             'transfers.transferredBy', 'transfers.items.sourceInventoryItem.product.unit', 'transfers.items.allocations.sourceBatch', 'transfers.items.allocations.destinationBatch',
         ]);
         $inventoryItems = $administrationVoucher->warehouse->inventoryItems()->whereIn('product_id', $administrationVoucher->items->pluck('product_id'))->withStockTotals()->get()->keyBy('product_id');

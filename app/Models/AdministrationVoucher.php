@@ -56,4 +56,9 @@ class AdministrationVoucher extends Model
     {
         return $this->hasMany(InventoryTransfer::class);
     }
+
+    public function consumptions(): HasMany
+    {
+        return $this->hasMany(AdministrationVoucherConsumption::class);
+    }
 }

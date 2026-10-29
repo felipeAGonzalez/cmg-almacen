@@ -1,5 +1,6 @@
 <?php
 
+use App\Http\Controllers\AdministrationVoucherConsumptionController;
 use App\Http\Controllers\AdministrationVoucherController;
 use App\Http\Controllers\AdministrationVoucherFulfillmentController;
 use App\Http\Controllers\BrandController;
@@ -78,6 +79,8 @@ Route::middleware(['auth', 'prevent.back'])->group(function () {
     Route::get('administration/vouchers', [AdministrationVoucherController::class, 'index'])->name('administration-vouchers.index');
     Route::get('administration/vouchers/create', [AdministrationVoucherController::class, 'create'])->name('administration-vouchers.create');
     Route::post('administration/vouchers', [AdministrationVoucherController::class, 'store'])->name('administration-vouchers.store');
+    Route::post('administration/vouchers/from-cabinet-consumption', [AdministrationVoucherConsumptionController::class, 'store'])
+        ->name('administration-vouchers.consumptions.store');
     Route::get('administration/vouchers/{administrationVoucher}/edit', [AdministrationVoucherController::class, 'edit'])->name('administration-vouchers.edit');
     Route::put('administration/vouchers/{administrationVoucher}', [AdministrationVoucherController::class, 'update'])->name('administration-vouchers.update');
     Route::get('administration/vouchers/{administrationVoucher}/print', [VoucherPrintController::class, 'administration'])->name('administration-vouchers.print');
