@@ -1086,6 +1086,7 @@ document.addEventListener('DOMContentLoaded', function () {
             updateAll();
             row.querySelector('[data-product-search-input]').focus();
         });
+        bindEnterToAddProduct(form, '[data-voucher-item]', addButton);
     }
 
     document.querySelectorAll('[data-disable-submit-form]').forEach(function (targetForm) {

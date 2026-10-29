@@ -83,6 +83,7 @@ class NursingVoucherInterfaceTest extends TestCase
             ->assertSee('Producto permitido')->assertSee('Comercial: Marca rápida')->assertDontSee('Producto ajeno')
             ->assertSee('data-product-search-input', false)
             ->assertSee('data-product-search-select', false)
+            ->assertSee('data-enter-add-product', false)
             ->assertSee('nombre comercial')
             ->assertDontSee('name="source_type"', false);
     }

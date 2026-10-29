@@ -55,7 +55,7 @@
             'barcode' => $inventoryItem->product->barcode,
         ])->values();
     @endphp
-    <form method="POST" action="{{ route('nursing-vouchers.store') }}" data-nursing-voucher-form>
+    <form method="POST" action="{{ route('nursing-vouchers.store') }}" data-nursing-voucher-form data-enter-add-product>
         @csrf
         <section class="admin-card mb-4" data-nursing-voucher-items data-product-options='@json($productOptions)'>
             <div class="admin-card-header d-flex flex-wrap align-items-center justify-content-between gap-2">

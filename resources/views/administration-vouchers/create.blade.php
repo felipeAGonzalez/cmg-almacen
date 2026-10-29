@@ -18,15 +18,17 @@
 @endif
 <form method="POST" action="{{ $isEditing ? route('administration-vouchers.update', $voucher) : route('administration-vouchers.store') }}" class="card card-body border-0 shadow-sm" id="administration-voucher-form">@csrf @if($isEditing) @method('PUT') @endif
 <div class="row g-3"><div class="col-md-6"><label class="form-label">Almacén</label><select name="warehouse_id" id="admin-warehouse" class="form-select @error('warehouse_id') is-invalid @enderror" required><option value="">Selecciona un almacén</option>@foreach($warehouses as $warehouse)<option value="{{ $warehouse->id }}" @selected((string)$selectedWarehouse===(string)$warehouse->id)>{{ $warehouse->name }}</option>@endforeach</select>@error('warehouse_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div><div class="col-md-6"><label class="form-label">Gabinete</label><select name="cabinet_id" id="admin-cabinet" class="form-select @error('cabinet_id') is-invalid @enderror" required><option value="">Selecciona un gabinete</option></select>@error('cabinet_id')<div class="invalid-feedback">{{ $message }}</div>@enderror</div></div>
-<hr><div class="d-flex justify-content-between"><h3 class="h5">Productos</h3><button type="button" class="btn btn-outline-primary btn-sm" id="add-admin-item">Agregar producto</button></div><div id="admin-items" class="d-grid gap-3 mt-3"></div>@error('items')<div class="text-danger small">{{ $message }}</div>@enderror
+<hr><div><h3 class="h5 mb-1">Productos</h3><p class="small text-body-secondary mb-0">Presiona Enter en la cantidad para agregar otro producto.</p></div><div class="admin-voucher-product-toolbar"><button type="button" class="btn btn-primary d-inline-flex align-items-center gap-2 shadow-sm" id="add-admin-item"><i class="bi bi-plus-lg" aria-hidden="true"></i>Agregar producto</button></div><div id="admin-items" class="d-grid gap-3"></div>@error('items')<div class="text-danger small">{{ $message }}</div>@enderror
 <div class="mt-3"><label class="form-label">Notas <span class="text-body-secondary">(Opcional)</span></label><textarea name="notes" class="form-control">{{ old('notes', $voucher->notes ?? '') }}</textarea></div><div class="mt-4 d-flex gap-2"><a href="{{ $isEditing ? route('administration-vouchers.show', $voucher) : route('administration-vouchers.index') }}" class="btn btn-outline-secondary">Cancelar</a><button class="btn btn-primary">{{ $isEditing ? 'Guardar cambios' : 'Crear vale' }}</button></div></form>
 @php($catalog = $warehouses->mapWithKeys(fn($w)=>[$w->id=>['cabinets'=>$w->cabinets->map(fn($c)=>['id'=>$c->id,'name'=>$c->name,'products'=>$c->inventoryItems->filter(fn($ci)=>$w->inventoryItems->contains('product_id',$ci->product_id))->map(fn($ci)=>['id'=>$ci->product->id,'name'=>$ci->product->name,'commercialName'=>$ci->product->commercial_name,'code'=>$ci->product->code,'barcode'=>$ci->product->barcode,'unit'=>$ci->product->unit->name])->values()])->values()]]))
 <script>
 document.addEventListener('DOMContentLoaded', () => {
     const data = @json($catalog);
+    const form = document.querySelector('#administration-voucher-form');
     const warehouse = document.querySelector('#admin-warehouse');
     const cabinet = document.querySelector('#admin-cabinet');
     const box = document.querySelector('#admin-items');
+    const addButton = document.querySelector('#add-admin-item');
     const oldCabinet = @json($selectedCabinet);
     const oldItems = @json($initialItems);
     const validationErrors = @json($errors->getMessages());
@@ -56,6 +58,7 @@ document.addEventListener('DOMContentLoaded', () => {
         rows.forEach((row, index) => {
             const wrapper = document.createElement('div');
             wrapper.className = 'row g-2 align-items-end border rounded p-2';
+            wrapper.dataset.adminItem = '';
             const options = products().map(product => {
                 const search = [product.name, product.commercialName, product.code, product.barcode].filter(Boolean).join(' ');
                 const label = [product.name, product.commercialName ? `Comercial: ${product.commercialName}` : null, product.unit].filter(Boolean).join(' — ');
@@ -91,12 +94,13 @@ document.addEventListener('DOMContentLoaded', () => {
         rows = [{product_id: '', quantity: ''}];
         render();
     };
-    document.querySelector('#add-admin-item').onclick = () => {
+    addButton.onclick = () => {
         syncRows();
         rows.push({product_id: '', quantity: ''});
         render();
         box.lastElementChild.querySelector('[data-product-search-input]').focus();
     };
+    bindEnterToAddProduct(form, '[data-admin-item]', addButton);
     loadCabinets();
 });
 </script>

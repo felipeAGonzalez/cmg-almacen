@@ -48,7 +48,9 @@ class AdministrationVoucherInterfaceTest extends TestCase
             ->assertSee('Marca Admin')->assertSee('Buscar por ingrediente activo o nombre comercial')
             ->assertSee('data-product-search-select', false)
             ->assertSee('function syncRows()', false)
-            ->assertSee("document.querySelector('#add-admin-item').onclick", false);
+            ->assertSee('Presiona Enter en la cantidad para agregar otro producto.')
+            ->assertSee('admin-voucher-product-toolbar', false)
+            ->assertSee("bindEnterToAddProduct(form, '[data-admin-item]', addButton);", false);
     }
 
     public function test_weekly_delegate_create_form_only_contains_assigned_warehouses(): void
