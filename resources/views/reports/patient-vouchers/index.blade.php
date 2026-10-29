@@ -12,24 +12,34 @@
 
 <section class="admin-card mb-4">
     <div class="admin-card-header">
-        <h3 class="h6 fw-bold mb-1">Periodo</h3>
-        <p class="small text-body-secondary mb-0">Por defecto se muestra la actividad del día actual.</p>
+        <h3 class="h6 fw-bold mb-1">Filtros</h3>
+        <p class="small text-body-secondary mb-0">Busca por paciente, habitación o periodo. Por defecto se muestra la actividad del día actual.</p>
     </div>
     <div class="p-4">
         <form method="GET" action="{{ route('reports.patient-vouchers.index') }}" class="row g-3 align-items-end">
-            <div class="col-md-4">
+            <div class="col-lg-4 col-md-6">
+                <label for="patient_name" class="form-label">Paciente</label>
+                <input id="patient_name" name="patient_name" type="search" value="{{ $filters['patient_name'] }}" class="form-control @error('patient_name') is-invalid @enderror" placeholder="Nombre del paciente">
+                @error('patient_name')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-lg-2 col-md-6">
+                <label for="room_number" class="form-label">Habitación</label>
+                <input id="room_number" name="room_number" type="search" value="{{ $filters['room_number'] }}" class="form-control @error('room_number') is-invalid @enderror" placeholder="Número">
+                @error('room_number')<div class="invalid-feedback">{{ $message }}</div>@enderror
+            </div>
+            <div class="col-lg-3 col-md-6">
                 <label for="date_from" class="form-label">Fecha desde</label>
                 <input id="date_from" name="date_from" type="date" value="{{ $filters['date_from'] }}" class="form-control @error('date_from') is-invalid @enderror" required>
                 @error('date_from')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-4">
+            <div class="col-lg-3 col-md-6">
                 <label for="date_to" class="form-label">Fecha hasta</label>
                 <input id="date_to" name="date_to" type="date" value="{{ $filters['date_to'] }}" class="form-control @error('date_to') is-invalid @enderror" required>
                 @error('date_to')<div class="invalid-feedback">{{ $message }}</div>@enderror
             </div>
-            <div class="col-md-4 d-flex gap-2">
-                <button class="btn btn-primary flex-grow-1"><i class="bi bi-funnel me-1"></i>Consultar</button>
-                <a href="{{ route('reports.patient-vouchers.index') }}" class="btn btn-light border">Hoy</a>
+            <div class="col-12 d-flex flex-wrap gap-2">
+                <button class="btn btn-primary"><i class="bi bi-funnel me-1"></i>Filtrar</button>
+                <a href="{{ route('reports.patient-vouchers.index') }}" class="btn btn-light border">Limpiar filtros</a>
             </div>
         </form>
     </div>
@@ -46,8 +56,8 @@
     @if($patients->isEmpty())
         <div class="empty-state">
             <span class="empty-state-icon"><i class="bi bi-person-vcard"></i></span>
-            <h3 class="h5">No hay vales para este periodo.</h3>
-            <p class="text-body-secondary mb-0">Cambia las fechas para consultar otro periodo.</p>
+            <h3 class="h5">No hay vales que coincidan con los filtros.</h3>
+            <p class="text-body-secondary mb-0">Prueba con otro paciente, habitación o periodo.</p>
         </div>
     @else
         <div class="table-responsive">

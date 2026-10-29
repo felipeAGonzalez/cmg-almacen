@@ -12,7 +12,7 @@ class PatientVoucherReportController extends Controller
 {
     public function index(PatientVoucherReportRequest $request, PatientVoucherReportService $report): View
     {
-        $filters = $request->dateRange();
+        $filters = $request->reportFilters();
 
         return view('reports.patient-vouchers.index', [
             'filters' => $filters,
@@ -22,7 +22,7 @@ class PatientVoucherReportController extends Controller
 
     public function show(PatientVoucherReportRequest $request, PatientVoucherReportService $report): View
     {
-        $filters = $request->dateRange();
+        $filters = $request->reportFilters();
 
         try {
             $patientKey = Crypt::decryptString((string) $request->validated('patient'));

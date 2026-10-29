@@ -121,7 +121,41 @@ class PatientVoucherReportTest extends TestCase
         ]))->assertOk()->assertDontSee('Paciente Consolidado');
     }
 
-    private function nursingVoucher(Warehouse $warehouse, User $requester, string $patient, Carbon $at): NursingVoucher
+    public function test_index_filters_by_patient_name_and_room_number(): void
+    {
+        Carbon::setTestNow('2026-10-15 12:00:00');
+        $warehouse = Warehouse::factory()->create();
+        $user = User::factory()->administrator()->create();
+        $this->nursingVoucher($warehouse, $user, 'María Hernández', now()->subHour(), '204-A');
+        $this->manualVoucher($warehouse, $user, 'Paciente Diferente', now(), '318');
+
+        $dates = ['date_from' => '2026-10-15', 'date_to' => '2026-10-15'];
+
+        $this->actingAs($user)->get(route('reports.patient-vouchers.index', [
+            ...$dates,
+            'patient_name' => '  hernández  ',
+        ]))->assertOk()
+            ->assertSee('María Hernández')
+            ->assertDontSee('Paciente Diferente')
+            ->assertSee('value="hernández"', false);
+
+        $this->get(route('reports.patient-vouchers.index', [
+            ...$dates,
+            'room_number' => '318',
+        ]))->assertOk()
+            ->assertSee('Paciente Diferente')
+            ->assertDontSee('María Hernández')
+            ->assertSee('value="318"', false);
+
+        $this->get(route('reports.patient-vouchers.index', [
+            ...$dates,
+            'patient_name' => 'María',
+            'room_number' => '318',
+        ]))->assertOk()
+            ->assertSee('No hay vales que coincidan con los filtros.');
+    }
+
+    private function nursingVoucher(Warehouse $warehouse, User $requester, string $patient, Carbon $at, string $roomNumber = '204'): NursingVoucher
     {
         return NursingVoucher::create([
             'requested_by' => $requester->id,
@@ -131,19 +165,19 @@ class PatientVoucherReportTest extends TestCase
             'external_hospitalization_id' => 'hospitalization-report-'.uniqid(),
             'patient_name' => $patient,
             'external_room_id' => 'room-report',
-            'room_number' => '204',
+            'room_number' => $roomNumber,
             'status' => NursingVoucherStatus::SUPPLIED,
             'requested_at' => $at,
             'completed_at' => $at,
         ]);
     }
 
-    private function manualVoucher(Warehouse $warehouse, User $user, string $patient, Carbon $at): InventoryOutbound
+    private function manualVoucher(Warehouse $warehouse, User $user, string $patient, Carbon $at, string $roomNumber = '204'): InventoryOutbound
     {
         return $warehouse->inventoryOutbounds()->create([
             'reason' => InventoryOutboundReason::PATIENT_CARE,
             'patient_name' => $patient,
-            'room_number' => '204',
+            'room_number' => $roomNumber,
             'processed_by' => $user->id,
             'processed_at' => $at,
             'source_type' => InventoryOutbound::SOURCE_MANUAL,

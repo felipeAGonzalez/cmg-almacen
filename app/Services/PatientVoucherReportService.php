@@ -20,6 +20,7 @@ class PatientVoucherReportService
             ->select([
                 DB::raw('LOWER(TRIM(patient_name)) as patient_key'),
                 'patient_name',
+                'room_number',
                 'requested_at as occurred_at',
                 DB::raw("'nursing' as voucher_type"),
             ])
@@ -32,6 +33,7 @@ class PatientVoucherReportService
                     ->select([
                         DB::raw('LOWER(TRIM(patient_name)) as patient_key'),
                         'patient_name',
+                        'room_number',
                         'processed_at as occurred_at',
                         DB::raw("'manual' as voucher_type"),
                     ]),
@@ -39,6 +41,8 @@ class PatientVoucherReportService
 
         $paginator = DB::query()
             ->fromSub($movements, 'patient_vouchers')
+            ->when($filters['patient_name'], fn ($query, string $patientName) => $query->where('patient_name', 'like', '%'.$patientName.'%'))
+            ->when($filters['room_number'], fn ($query, string $roomNumber) => $query->where('room_number', 'like', '%'.$roomNumber.'%'))
             ->select('patient_key')
             ->selectRaw('MAX(patient_name) as patient_name')
             ->selectRaw('COUNT(*) as vouchers_count')
