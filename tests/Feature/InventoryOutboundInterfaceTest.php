@@ -53,9 +53,100 @@ class InventoryOutboundInterfaceTest extends TestCase
         $outbound = $this->outbound($warehouse, $item, $user, '1');
 
         $this->actingAs($user)->get(route('warehouses.outbounds.index', $warehouse))->assertOk()
-            ->assertSee('Daño')->assertDontSee('damage')->assertSee($user->name)->assertSee('1 producto')
+            ->assertSee('Daño')->assertDontSee('>damage<', false)->assertSee($user->name)->assertSee('1 producto')
             ->assertSee(route('warehouses.outbounds.show', [$warehouse, $outbound]), false)
             ->assertDontSee('Editar')->assertDontSee('Eliminar');
+    }
+
+    public function test_index_filters_by_search_reason_source_area_and_dates(): void
+    {
+        [$warehouse, $item, $user] = $this->context();
+        $item->product->update(['name' => 'Paracetamol clínico', 'commercial_name' => 'Marca localizada']);
+        $cabinet = Cabinet::factory()->for($warehouse)->create(['name' => 'Gabinete nocturno']);
+        $cabinetItem = InventoryItem::factory()->forCabinet($cabinet)->for($item->product)->create();
+
+        $visible = $warehouse->inventoryOutbounds()->create([
+            'reason' => InventoryOutboundReason::PATIENT_CARE,
+            'patient_name' => 'Paciente Localizado',
+            'room_number' => '204',
+            'requesting_area' => ManualVoucherRequestingArea::PAMEDIC,
+            'notes' => 'Tratamiento localizado',
+            'processed_by' => $user->id,
+            'processed_at' => '2026-10-20 10:00:00',
+            'source_type' => InventoryOutbound::SOURCE_MANUAL,
+        ]);
+        $visible->items()->create(['inventory_item_id' => $item->id, 'requested_quantity' => '2.000']);
+
+        $hidden = $warehouse->inventoryOutbounds()->create([
+            'reason' => InventoryOutboundReason::DAMAGE,
+            'notes' => 'Salida que debe ocultarse',
+            'processed_by' => $user->id,
+            'processed_at' => '2026-09-01 10:00:00',
+            'source_type' => InventoryOutbound::SOURCE_MANUAL,
+        ]);
+        $hidden->items()->create(['inventory_item_id' => $item->id, 'requested_quantity' => '1.000']);
+
+        $cabinetOutbound = $warehouse->inventoryOutbounds()->create([
+            'source_cabinet_id' => $cabinet->id,
+            'reason' => InventoryOutboundReason::PATIENT_CARE,
+            'patient_name' => 'Paciente Gabinete',
+            'requesting_area' => ManualVoucherRequestingArea::NURSING_AREA,
+            'processed_by' => $user->id,
+            'processed_at' => '2026-10-20 11:00:00',
+            'source_type' => InventoryOutbound::SOURCE_MANUAL,
+        ]);
+        $cabinetOutbound->items()->create(['inventory_item_id' => $cabinetItem->id, 'requested_quantity' => '1.000']);
+
+        $this->actingAs($user)->get(route('warehouses.outbounds.index', [
+            $warehouse,
+            'search' => 'Marca localizada',
+            'reason' => InventoryOutboundReason::PATIENT_CARE->value,
+            'source' => 'warehouse',
+            'requesting_area' => ManualVoucherRequestingArea::PAMEDIC->value,
+            'date_from' => '2026-10-20',
+            'date_to' => '2026-10-20',
+        ]))->assertOk()
+            ->assertSee('Paciente Localizado')
+            ->assertDontSee('Salida que debe ocultarse')
+            ->assertDontSee('Paciente Gabinete');
+
+        $this->get(route('warehouses.outbounds.index', [
+            $warehouse,
+            'source' => 'cabinet',
+            'cabinet_id' => $cabinet->id,
+        ]))->assertOk()
+            ->assertSee('Paciente Gabinete')
+            ->assertDontSee('Paciente Localizado');
+    }
+
+    public function test_index_pagination_preserves_filters_and_rejects_invalid_values(): void
+    {
+        [$warehouse, $item, $user] = $this->context();
+
+        foreach (range(1, 16) as $index) {
+            $outbound = $warehouse->inventoryOutbounds()->create([
+                'reason' => InventoryOutboundReason::DAMAGE,
+                'notes' => 'Daño filtrable '.$index,
+                'processed_by' => $user->id,
+                'processed_at' => now()->subMinutes($index),
+                'source_type' => InventoryOutbound::SOURCE_MANUAL,
+            ]);
+            $outbound->items()->create(['inventory_item_id' => $item->id, 'requested_quantity' => '1.000']);
+        }
+
+        $this->actingAs($user)->get(route('warehouses.outbounds.index', [
+            $warehouse,
+            'reason' => InventoryOutboundReason::DAMAGE->value,
+        ]))->assertOk()
+            ->assertSee('reason=damage', false)
+            ->assertSee('page=2', false);
+
+        $this->get(route('warehouses.outbounds.index', [
+            $warehouse,
+            'reason' => 'nursing_voucher',
+            'date_from' => '2026-10-22',
+            'date_to' => '2026-10-20',
+        ]))->assertSessionHasErrors(['reason', 'date_to']);
     }
 
     public function test_create_only_displays_warehouse_inventory_and_manual_reasons(): void
