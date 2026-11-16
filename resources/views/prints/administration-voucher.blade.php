@@ -26,6 +26,8 @@
     <tbody>@foreach($detailRows as $row)<tr><td>{{ $row['transfer']->transferred_at->format('d/m/Y H:i') }}</td><td>{{ $row['item']->sourceInventoryItem->product->name }}</td><td>{{ $row['allocation']->sourceBatch->internal_lot }}</td><td>{{ $row['allocation']->destinationBatch->internal_lot }}</td><td>{{ $row['allocation']->sourceBatch->expiration_date?->format('d/m/Y') ?: 'Sin caducidad' }}</td><td class="number">{{ \App\Models\InventoryItem::formatQuantity($row['allocation']->quantity) }}</td></tr>@endforeach</tbody>
 </table>
 @if($voucher->notes)<h2 class="section-title">Notas</h2><div class="notes">{{ $voucher->notes }}</div>@endif
-<div class="signatures"><div class="signature">Firma de Almacén</div><div class="signature">Firma de recepción de Gabinete</div></div>
-<div class="print-note">Responsable de la última reposición: {{ $voucher->transfers->last()->transferredBy->name }} {{ $voucher->transfers->last()->transferredBy->last_name_one }}</div>
+<div class="document-footer">
+    <div class="signatures"><div class="signature">Firma de Almacén</div><div class="signature">Firma de recepción de Gabinete</div></div>
+    <div class="print-note">Responsable de la última reposición: {{ $voucher->transfers->last()->transferredBy->name }} {{ $voucher->transfers->last()->transferredBy->last_name_one }}</div>
+</div>
 @endsection

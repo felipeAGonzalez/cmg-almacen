@@ -16,7 +16,7 @@
         .print-toolbar { width: 210mm; max-width: calc(100% - 24px); margin: 18px auto 10px; display: flex; justify-content: space-between; gap: 8px; }
         .button { border: 1px solid #9aa5b1; border-radius: 5px; padding: 9px 14px; background: #fff; color: #172b4d; text-decoration: none; cursor: pointer; font: inherit; }
         .button-primary { color: #fff; border-color: var(--accent); background: var(--accent); }
-        .sheet { width: 210mm; min-height: 277mm; margin: 0 auto 18px; padding: 9mm 11mm; background: var(--paper); box-shadow: 0 3px 18px rgba(15, 23, 42, .14); overflow: hidden; }
+        .sheet { width: 210mm; min-height: 277mm; margin: 0 auto 18px; padding: 9mm 11mm; background: var(--paper); box-shadow: 0 3px 18px rgba(15, 23, 42, .14); }
         .letterhead { display: grid; grid-template-columns: 1fr 31mm; min-height: 24mm; gap: 8mm; align-items: center; padding-bottom: 3mm; border-bottom: 2px solid var(--ink); }
         .institution { font-size: 19px; font-weight: 700; letter-spacing: .4px; text-transform: uppercase; }
         .department { color: var(--muted); margin-top: 3px; font-size: 10px; letter-spacing: .8px; text-transform: uppercase; }
@@ -40,26 +40,18 @@
         .signatures { display: grid; grid-template-columns: 1fr 1fr; gap: 18mm; margin-top: 13mm; }
         .signature { border-top: 1px solid var(--ink); padding-top: 1.5mm; text-align: center; }
         .print-note { margin-top: 3mm; color: var(--muted); font-size: 8px; text-align: right; }
-        .density-compact { font-size: 9.5px; }
-        .density-compact .meta-item { min-height: 10mm; padding: 1.5mm 2mm; }
-        .density-compact th, .density-compact td { padding: 1mm 1.5mm; }
-        .density-compact .section-title { margin-top: 2.5mm; }
-        .density-compact .signatures { margin-top: 8mm; }
-        .density-dense { font-size: 8px; }
-        .density-dense .sheet { padding-top: 6mm; padding-bottom: 6mm; }
-        .density-dense .letterhead { min-height: 18mm; }
-        .density-dense h1 { margin: 2mm 0 .5mm; font-size: 13px; }
-        .density-dense .folio { margin-bottom: 2mm; }
-        .density-dense .meta-item { min-height: 8mm; padding: 1mm 1.5mm; }
-        .density-dense th, .density-dense td { padding: .65mm 1mm; font-size: 7px; }
-        .density-dense .section-title { margin: 1.8mm 0 .8mm; font-size: 9px; }
-        .density-dense .notes { min-height: 7mm; }
-        .density-dense .signatures { margin-top: 6mm; }
-        @page { size: A4 portrait; margin: 0; }
+        .document-footer { break-inside: avoid; page-break-inside: avoid; }
+        @page { size: A4 portrait; margin: 10mm 11mm 12mm; }
         @media print {
             body { background: #fff; }
             .print-toolbar { display: none !important; }
-            .sheet { width: 210mm; min-height: 297mm; max-height: 297mm; margin: 0; box-shadow: none; page-break-after: avoid; zoom: var(--print-scale, 1); }
+            .sheet { width: auto; min-height: 0; margin: 0; padding: 0; box-shadow: none; overflow: visible; }
+            .letterhead, .meta, .notes, .document-footer { break-inside: avoid; page-break-inside: avoid; }
+            .section-title { break-after: avoid; page-break-after: avoid; }
+            table { break-inside: auto; page-break-inside: auto; }
+            thead { display: table-header-group; }
+            tbody { display: table-row-group; }
+            tr { break-inside: avoid; page-break-inside: avoid; }
         }
         @media (max-width: 800px) {
             .sheet { width: 100%; min-height: auto; padding: 18px; }
@@ -69,12 +61,8 @@
         }
     </style>
 </head>
-@php
-    $rowCount = ($summaryRows ?? 0) + ($detailRowsCount ?? 0);
-    $density = $rowCount > 24 ? 'density-dense' : ($rowCount > 12 ? 'density-compact' : 'density-normal');
-    $logoExists = file_exists(public_path($logoFile));
-@endphp
-<body class="{{ $density }}">
+@php($logoExists = file_exists(public_path($logoFile)))
+<body>
     <div class="print-toolbar">
         <a class="button" href="{{ $backUrl }}">Volver al vale</a>
         <button class="button button-primary" type="button" onclick="window.print()">Imprimir vale</button>
@@ -93,23 +81,5 @@
         </header>
         @yield('document')
     </main>
-    <script>
-        (() => {
-            const fitPrintedSheet = () => {
-                const sheet = document.querySelector('.sheet');
-                sheet.style.removeProperty('--print-scale');
-                const availableHeight = sheet.clientHeight;
-                const requiredHeight = sheet.scrollHeight;
-                const scale = requiredHeight > availableHeight
-                    ? Math.max(0.55, availableHeight / requiredHeight)
-                    : 1;
-
-                sheet.style.setProperty('--print-scale', scale.toFixed(3));
-            };
-
-            window.addEventListener('beforeprint', fitPrintedSheet);
-            window.addEventListener('load', fitPrintedSheet);
-        })();
-    </script>
 </body>
 </html>

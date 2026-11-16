@@ -27,6 +27,8 @@
     <tbody>@foreach($detailRows as $row)<tr><td>{{ $row['fulfillment']->supplied_at->format('d/m/Y H:i') }}</td><td>{{ $row['item']->voucherItem->product->name }}</td><td>{{ $row['allocation']->inventoryBatch->internal_lot }}</td><td>{{ $row['allocation']->inventoryBatch->manufacturer_lot ?: 'No indicado' }}</td><td>{{ $row['allocation']->inventoryBatch->expiration_date?->format('d/m/Y') ?: 'Sin caducidad' }}</td><td class="number">{{ \App\Models\InventoryItem::formatQuantity($row['allocation']->quantity) }}</td></tr>@endforeach</tbody>
 </table>
 @if($voucher->notes)<h2 class="section-title">Notas</h2><div class="notes">{{ $voucher->notes }}</div>@endif
-<div class="signatures"><div class="signature">Firma de quien entrega</div><div class="signature">Firma de Enfermería</div></div>
-<div class="print-note">Responsable del surtido: {{ $voucher->fulfillments->last()->suppliedBy->name }} {{ $voucher->fulfillments->last()->suppliedBy->last_name_one }}</div>
+<div class="document-footer">
+    <div class="signatures"><div class="signature">Firma de quien entrega</div><div class="signature">Firma de Enfermería</div></div>
+    <div class="print-note">Responsable del surtido: {{ $voucher->fulfillments->last()->suppliedBy->name }} {{ $voucher->fulfillments->last()->suppliedBy->last_name_one }}</div>
+</div>
 @endsection

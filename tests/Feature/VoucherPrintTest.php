@@ -144,6 +144,25 @@ class VoucherPrintTest extends TestCase
             ->assertNotFound();
     }
 
+    public function test_print_layout_flows_across_pages_without_scaling_or_clipping_content(): void
+    {
+        $admin = User::factory()->administrator()->create();
+        $warehouse = Warehouse::factory()->create();
+        $voucher = $this->nursingVoucher($admin, $warehouse, NursingVoucherStatus::PARTIALLY_SUPPLIED);
+        $voucher->fulfillments()->create(['supplied_by' => $admin->id, 'supplied_at' => now()]);
+
+        $this->actingAs($admin)
+            ->get(route('nursing-vouchers.print', $voucher))
+            ->assertOk()
+            ->assertSee('@page { size: A4 portrait; margin: 10mm 11mm 12mm; }', false)
+            ->assertSee('thead { display: table-header-group; }', false)
+            ->assertSee('tr { break-inside: avoid; page-break-inside: avoid; }', false)
+            ->assertSee('class="document-footer"', false)
+            ->assertDontSee('max-height: 297mm', false)
+            ->assertDontSee('fitPrintedSheet', false)
+            ->assertDontSee('--print-scale', false);
+    }
+
     public function test_pamedic_manual_voucher_uses_its_own_letterhead_and_logo_path(): void
     {
         $admin = User::factory()->administrator()->create();
